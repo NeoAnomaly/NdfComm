@@ -1,5 +1,5 @@
 #include "NdfCommUtils.h"
-#include "NdfCommMemory.h"
+#include "NdfCommDebug.h"
 #include <ntintsafe.h>
 
 #ifdef ALLOC_PRAGMA

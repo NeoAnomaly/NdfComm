@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\NdfCommClient.c" />
+    <ClCompile Include="src\NdfCommDebug.c" />
     <ClCompile Include="src\NdfCommDispatch.c" />
     <ClCompile Include="src\NdfCommInit.c" />
     <ClCompile Include="src\NdfCommMessage.c" />
@@ -31,7 +32,7 @@
     <ClInclude Include="inc\private\NdfCommConcurentList.h" />
     <ClInclude Include="inc\private\NdfCommDispatch.h" />
     <ClInclude Include="inc\private\NdfCommGlobalData.h" />
-    <ClInclude Include="inc\private\NdfCommMemory.h" />
+    <ClInclude Include="inc\private\NdfCommDebug.h" />
     <ClInclude Include="inc\private\NdfCommMessage.h" />
     <ClInclude Include="inc\private\NdfCommUtils.h" />
     <ClInclude Include="inc\public\NdfCommKm.h" />
@@ -98,21 +99,25 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Shared\private;$(SolutionDir)Shared\public;inc\private;inc\public;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Shared\private;$(SolutionDir)Shared\public;inc\private;inc\public;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Shared\private;$(SolutionDir)Shared\public;inc\private;inc\public;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(SolutionDir)Shared\private;$(SolutionDir)Shared\public;inc\private;inc\public;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessToFile>false</PreprocessToFile>
     </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

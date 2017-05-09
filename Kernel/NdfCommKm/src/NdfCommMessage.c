@@ -42,7 +42,7 @@ NdfCommMessageDeliverToKm(
 		}		
 	}
 
-	if (!ExAcquireRundownProtection(&client->MsgNotifyRundownRef))
+	if (!ExAcquireRundownProtection(&client->MsgNotificationRundownRef))
 	{
 		return STATUS_PORT_DISCONNECTED;
 	}
@@ -56,7 +56,7 @@ NdfCommMessageDeliverToKm(
 		ReturnOutputBufferSize
 	);
 
-	ExReleaseRundownProtection(&client->MsgNotifyRundownRef);
+	ExReleaseRundownProtection(&client->MsgNotificationRundownRef);
 
 	return status;
 }

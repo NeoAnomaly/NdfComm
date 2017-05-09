@@ -3,6 +3,7 @@
 #include "NdfCommShared.h"
 #include "NdfCommUtils.h"
 #include "NdfCommDispatch.h"
+#include "NdfCommDebug.h"
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(INIT, NdfCommInit)
@@ -17,7 +18,7 @@ NdfCommInit(
 	__in PNDFCOMM_CONNECT_NOTIFY ConnectNotifyCallback,
 	__in PNDFCOMM_DISCONNECT_NOTIFY DisconnectNotifyCallback,
 	__in PNDFCOMM_MESSAGE_NOTIFY MessageNotifyCallback,
-	__in LONG MaxClients
+	__in ULONG MaxClients
 )
 {
     PAGED_CODE();
@@ -25,6 +26,12 @@ NdfCommInit(
     NTSTATUS status = STATUS_SUCCESS;
 
     DECLARE_UNICODE_STRING_SIZE(deviceName, NDFCOMM_MSG_MAX_CCH_NAME_SIZE);
+
+	NdfCommDebugTrace(
+		TRACE_LEVEL_INFORMATION,
+		0,
+		"Initializing..."
+	);
 
 	if (
 		!DriverName
@@ -38,11 +45,28 @@ NdfCommInit(
 		!MaxClients
 		)
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: One of the following parameters is not valid(NULL):\n"
+			"\tDriverName(%p)\n"
+			"\tConnectNotifyCallback(%p)\n"
+			"\tDisconnectNotifyCallback(%p)\n"
+			"\tMessageNotifyCallback(%p)\n"
+			"\tMaxClients(%u)",
+			DriverName,
+			ConnectNotifyCallback,
+			DisconnectNotifyCallback,
+			MessageNotifyCallback,
+			MaxClients
+		);
+
 		return STATUS_INVALID_PARAMETER;
 	}
 
     RtlZeroMemory(&NdfCommGlobals, sizeof(NdfCommGlobals));
 
+	ExInitializeRundownProtection(&NdfCommGlobals.LibraryRundownRef);
 	NdfCommConcurentListInitialize(&NdfCommGlobals.ClientList);
 
 	NdfCommGlobals.MaxClientsCount = MaxClients;
@@ -53,6 +77,13 @@ NdfCommInit(
 	status = RtlUnicodeStringPrintf(&deviceName, NDFCOMM_MSG_DEVICE_NAME_FMT, DriverName);
     if (!NT_SUCCESS(status))
     {
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: RtlUnicodeStringPrintf(NDFCOMM_MSG_DEVICE_NAME_FMT) failed with status: %d",
+			status
+		);
+
         return status;
     }
 
@@ -68,6 +99,13 @@ NdfCommInit(
 
     if (!NT_SUCCESS(status))
     {
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: IoCreateDevice failed with status: %d",
+			status
+		);
+
         return status;
     }
 
@@ -78,6 +116,13 @@ NdfCommInit(
 	
 	if (!NT_SUCCESS(status))
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: NdfCommUnicodeStringAlloc failed with status: %d",
+			status
+		);
+
 		return status;
 	}
 
@@ -89,6 +134,13 @@ NdfCommInit(
 
 	if (!NT_SUCCESS(status))
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: RtlUnicodeStringPrintf(NDFCOMM_MSG_SYMLINK_NAME_FMT) failed with status: %d",
+			status
+		);
+
 		NdfCommUnicodeStringFree(NdfCommGlobals.SymbolicLinkName);
 		NdfCommGlobals.SymbolicLinkName = NULL;
 
@@ -99,6 +151,13 @@ NdfCommInit(
 
     if (!NT_SUCCESS(status))
     {
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: IoCreateSymbolicLink failed with status: %d",
+			status
+		);
+
         IoDeleteDevice(NdfCommGlobals.MessageDeviceObject);
         NdfCommGlobals.MessageDeviceObject = NULL;
 
@@ -121,6 +180,12 @@ NdfCommInit(
     DriverObject->MajorFunction[IRP_MJ_CLOSE] = NdfCommDispatch;
     DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = NdfCommDispatch;
 
+	NdfCommDebugTrace(
+		TRACE_LEVEL_INFORMATION,
+		0,
+		"Initializing complete"
+	);
+
     return status;
 }
 
@@ -131,8 +196,25 @@ NdfCommRelease(
 {
     PAGED_CODE();
 
+	NdfCommDebugTrace(
+		TRACE_LEVEL_INFORMATION,
+		0,
+		"Releasing..."
+	);
+
+	///
+	///
+	///
+	ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownRef);
+
 	if (NdfCommGlobals.SymbolicLinkName)
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_VERBOSE,
+			0,
+			"Deleting symbolic link..."
+		);
+
 		IoDeleteSymbolicLink(NdfCommGlobals.SymbolicLinkName);
 
 		NdfCommUnicodeStringFree(NdfCommGlobals.SymbolicLinkName);
@@ -141,6 +223,20 @@ NdfCommRelease(
 
     if (NdfCommGlobals.MessageDeviceObject)
     {
+		NdfCommDebugTrace(
+			TRACE_LEVEL_VERBOSE,
+			0,
+			"Deleting device object..."
+		);
+
         IoDeleteDevice(NdfCommGlobals.MessageDeviceObject);
     }
+
+	ExRundownCompleted(&NdfCommGlobals.LibraryRundownRef);
+
+	NdfCommDebugTrace(
+		TRACE_LEVEL_INFORMATION,
+		0,
+		"Releasing complete"
+	);
 }

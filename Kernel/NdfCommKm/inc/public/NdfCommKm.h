@@ -37,7 +37,7 @@ NdfCommInit(
 	__in PNDFCOMM_CONNECT_NOTIFY ConnectNotifyCallback,
 	__in PNDFCOMM_DISCONNECT_NOTIFY DisconnectNotifyCallback,
 	__in PNDFCOMM_MESSAGE_NOTIFY MessageNotifyCallback,
-	__in LONG MaxClients
+	__in ULONG MaxClients
 );
 
 VOID

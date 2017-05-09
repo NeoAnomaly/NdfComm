@@ -1,7 +1,7 @@
 #include "NdfCommClient.h"
 #include "NdfCommShared.h"
 #include "NdfCommGlobalData.h"
-#include "NdfCommMemory.h"
+#include "NdfCommDebug.h"
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(PAGE, NdfCommClientCreate)
@@ -21,18 +21,30 @@ NdfCommClientCreate(
 
 	if (!Client)
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: Parameter Client can't be NULL"
+		);
+
 		return STATUS_INVALID_PARAMETER;
 	}	
 	
 	client = ExAllocatePoolWithTag(PagedPool, sizeof(NDFCOMM_CLIENT), NDFCOMM_CLIENT_MEM_TAG);
 	if (!client)
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: Can't allocate memory for Client"
+		);
+
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
 	
 	RtlZeroMemory(client, sizeof(NDFCOMM_CLIENT));
 
-	ExInitializeRundownProtection(&client->MsgNotifyRundownRef);
+	ExInitializeRundownProtection(&client->MsgNotificationRundownRef);
 	ExInitializeFastMutex(&client->Lock);
 	KeInitializeEvent(&client->DisconnectEvent, NotificationEvent, FALSE);
 	NdfCommConcurentListInitialize(&client->ReplyWaiterList);

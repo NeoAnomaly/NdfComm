@@ -7,7 +7,7 @@ typedef struct _NDFCOMM_CLIENT
 {
 	LIST_ENTRY ListEntry;
 	PVOID ConnectionCookie;
-	EX_RUNDOWN_REF MsgNotifyRundownRef;
+	EX_RUNDOWN_REF MsgNotificationRundownRef;
 	FAST_MUTEX Lock;
 
 	UINT64 MessageIdCounter;

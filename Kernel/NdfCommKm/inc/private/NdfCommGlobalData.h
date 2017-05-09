@@ -7,6 +7,8 @@
 
 struct _NDFCOMM_GLOBALS
 {
+	EX_RUNDOWN_REF LibraryRundownRef;
+
     PDEVICE_OBJECT MessageDeviceObject;
 
 	///

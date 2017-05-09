@@ -152,41 +152,56 @@ NdfCommpDispatchCreate(
 	clientContext = NdfCommAdd2Ptr(eaInfo->EaName, NDFCOMM_EA_NAME_WITH_NULL_LENGTH);
 	clientContextSize = eaInfo->EaValueLength;
 
-	if (InterlockedIncrement(&NdfCommGlobals.ClientsCount) <= (LONG)NdfCommGlobals.MaxClientsCount)
+	///
+	/// Acquire library rundown protection as we are about adding the new client.
+	/// All successfully added clients will be released at library cleanup. 
+	/// These processes(adding/releasing) must be synchronized.
+	///
+	if (ExAcquireRundownProtection(&NdfCommGlobals.LibraryRundownRef))
 	{
-		status = NdfCommClientCreate(&client);
-
-		if (NT_SUCCESS(status))
+		if (InterlockedIncrement(&NdfCommGlobals.ClientsCount) <= (LONG)NdfCommGlobals.MaxClientsCount)
 		{
-			status = NdfCommGlobals.ConnectNotifyCallback(
-				client,
-				clientContext,
-				clientContextSize,
-				&client->ConnectionCookie
-			);
+			status = NdfCommClientCreate(&client);
 
 			if (NT_SUCCESS(status))
 			{
-				FileObject->FsContext = client;
+				status = NdfCommGlobals.ConnectNotifyCallback(
+					client,
+					clientContext,
+					clientContextSize,
+					&client->ConnectionCookie
+				);
 
-				NdfCommConcurentListAdd(&NdfCommGlobals.ClientList, &client->ListEntry);
-			}
-			else
-			{
-				LONG clientsCount = 0;
+				if (NT_SUCCESS(status))
+				{
+					FileObject->FsContext = client;
 
-				NdfCommClientFree(client);
-				client = NULL;
+					NdfCommConcurentListAdd(&NdfCommGlobals.ClientList, &client->ListEntry);
+				}
+				else
+				{
+					LONG clientsCount = 0;
 
-				clientsCount = InterlockedDecrement(&NdfCommGlobals.ClientsCount);
+					NdfCommClientFree(client);
+					client = NULL;
 
-				ASSERT(clientsCount >= 0);
+					clientsCount = InterlockedDecrement(&NdfCommGlobals.ClientsCount);
+
+					ASSERT(clientsCount >= 0);
+				}
+
 			}
 		}
+		else
+		{
+			status = STATUS_CONNECTION_COUNT_LIMIT;
+		}
+
+		ExReleaseRundownProtection(&NdfCommGlobals.LibraryRundownRef);
 	}
 	else
 	{
-		status = STATUS_CONNECTION_COUNT_LIMIT;
+		status = STATUS_CONNECTION_ABORTED;
 	}
 
 	return status;
@@ -208,17 +223,28 @@ NdfCommpDispatchCleanup(
 
 	NdfCommClientReleaseWaiters(client);
 
-	clientsCount = InterlockedDecrement(&NdfCommGlobals.ClientsCount);
+	///
+	/// Synchronize external(user app CloseHandle) and internal(at library cleanup) releasing
+	///
+	if (ExAcquireRundownProtection(&NdfCommGlobals.LibraryRundownRef))
+	{
+		clientsCount = InterlockedDecrement(&NdfCommGlobals.ClientsCount);
 
-	ASSERT(clientsCount >= 0);
+		ASSERT(clientsCount >= 0);
 
-	ExWaitForRundownProtectionRelease(&client->MsgNotifyRundownRef);
+		///
+		/// Stops messages delivering
+		///
+		ExWaitForRundownProtectionRelease(&client->MsgNotificationRundownRef);
 
-	NdfCommGlobals.DisconnectNotifyCallback(client->ConnectionCookie);
+		NdfCommGlobals.DisconnectNotifyCallback(client->ConnectionCookie);
 
-	ExRundownCompleted(&client->MsgNotifyRundownRef);
+		ExRundownCompleted(&client->MsgNotificationRundownRef);
 
-	NdfCommConcurentListRemove(&NdfCommGlobals.ClientList, &client->ListEntry);
+		NdfCommConcurentListRemove(&NdfCommGlobals.ClientList, &client->ListEntry);
+
+		ExReleaseRundownProtection(&NdfCommGlobals.LibraryRundownRef);
+	}
 }
 
 VOID
