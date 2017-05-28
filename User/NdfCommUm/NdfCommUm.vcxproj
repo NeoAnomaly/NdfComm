@@ -160,8 +160,8 @@
     <ClInclude Include="inc\public\NdfCommUm.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Misc.c" />
-    <ClCompile Include="src\NtApi.c" />
+    <ClCompile Include="src\NdfCommMisc.c" />
+    <ClCompile Include="src\NdfCommNtApi.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -31,10 +31,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\NtApi.c">
+    <ClCompile Include="src\NdfCommNtApi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Misc.c">
+    <ClCompile Include="src\NdfCommMisc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

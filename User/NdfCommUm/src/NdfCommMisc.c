@@ -5,6 +5,12 @@
 #include <strsafe.h>
 #include <intsafe.h>
 
+HRESULT
+NdfCommunicationpBuildMsgDeviceName(
+    __in LPCWSTR DriverName,
+    __inout PUNICODE_STRING DeviceName
+);
+
 const ULONG acc = FILE_READ_DATA | FILE_WRITE_DATA | SYNCHRONIZE;
 const size_t ea = sizeof(FILE_FULL_EA_INFORMATION);
 const size_t off = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName[0]);
@@ -12,7 +18,7 @@ const size_t t = sizeof(FILE_FULL_EA_INFORMATION) + sizeof(char) + 24;
 const size_t test = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName[0]) + sizeof(char) + 24;
 
 HRESULT
-CommunicationpBuildMsgDeviceName(
+NdfCommunicationpBuildMsgDeviceName(
     __in LPCWSTR DriverName,
     __inout PUNICODE_STRING DeviceName
 )
@@ -50,7 +56,7 @@ CommunicationpBuildMsgDeviceName(
 
 HRESULT
 WINAPI
-CommunicationConnect(
+NdfCommunicationConnect(
     __in LPCWSTR DriverName,
     __in_opt LPCVOID Context,
     __in USHORT ContextSize,
@@ -88,7 +94,7 @@ CommunicationConnect(
         return result;
     }
 
-    result = CommunicationpBuildMsgDeviceName(DriverName, &deviceName);
+    result = NdfCommunicationpBuildMsgDeviceName(DriverName, &deviceName);
     if (FAILED(result))
     {
         return result;
@@ -145,6 +151,36 @@ CommunicationConnect(
     if (!NT_SUCCESS(status))
     {
         result = HRESULT_FROM_NT(status);
+    }
+
+    return result;
+}
+
+HRESULT
+WINAPI
+NdfCommunicationSendMessage(
+    __in HANDLE Connection,
+    __in_opt LPVOID InputBuffer,
+    __in ULONG InputBufferSize,
+    __out_opt LPVOID OutputBuffer,
+    __in ULONG OutputBufferSize,
+    __out PULONG BytesReturned
+)
+{
+    HRESULT result = S_OK;
+
+    if (!DeviceIoControl(
+        Connection,
+        NDFCOMM_SENDMESSAGE,
+        InputBuffer,
+        InputBufferSize,
+        OutputBuffer,
+        OutputBufferSize,
+        BytesReturned,
+        NULL
+    ))
+    {
+        result = HRESULT_FROM_WIN32(GetLastError());
     }
 
     return result;

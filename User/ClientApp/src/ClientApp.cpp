@@ -9,6 +9,58 @@
 const LPWSTR LegacyDriverSvcName = L"NdfCommLegacyDrv";
 const LPWSTR LegacyDriverFileName = L"LegacyDrv.sys";
 
+bool AdjustPrivileges();
+bool StartLegacyDriver();
+bool StopLegacyDriver();
+
+int main()
+{
+    ULONG testValue = 0xfefefefe;
+    HANDLE hConnection = INVALID_HANDLE_VALUE;
+    HRESULT hr;
+
+    if (!AdjustPrivileges())
+    {
+        system("pause");
+
+        return 0;
+    }
+
+    if (StartLegacyDriver())
+    {
+        hr = NdfCommunicationConnect(
+            DRV_NAME,
+            &testValue,
+            sizeof(ULONG),
+            &hConnection
+        );
+
+        if (SUCCEEDED(hr))
+        {
+            /*hr = NdfCommunicationSendMessage(
+                hConnection,
+
+            )*/
+        }
+        else
+        {
+            wprintf(L"NdfCommunicationConnect failed with error: %d\n", hr);
+        }
+    }
+
+    system("pause");
+
+    if (hConnection != INVALID_HANDLE_VALUE)
+    {
+        CloseHandle(hConnection);
+        hConnection = INVALID_HANDLE_VALUE;
+    }
+
+    StopLegacyDriver();
+
+    return 0;
+}
+
 bool AdjustPrivileges()
 {
     HANDLE hProcess = GetCurrentProcess();
@@ -16,13 +68,19 @@ bool AdjustPrivileges()
     LUID luid;
     TOKEN_PRIVILEGES tp;
 
+    wprintf(L"Adjusting privilege...\n");
+
     if (!OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
     {
+        wprintf(L"OpenProcessToken failed with error: %u. Exiting...\n", GetLastError());
+
         return false;
     }
 
     if (!LookupPrivilegeValue(NULL, SE_LOAD_DRIVER_NAME, &luid))
     {
+        wprintf(L"LookupPrivilegeValue failed with error: %u. Exiting...\n", GetLastError());
+
         return false;
     }
 
@@ -32,11 +90,15 @@ bool AdjustPrivileges()
 
     if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL))
     {
+        wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
+
         return false;
     }
 
     if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
     {
+        wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
+
         return false;
     }
 
@@ -55,8 +117,6 @@ bool StartLegacyDriver()
 
         if (!WinSvcDelete(LegacyDriverSvcName))
         {
-            wprintf(L"!ERROR WinSvcDelete failed, exiting...\n");
-
             return false;
         }
     }
@@ -120,13 +180,11 @@ bool StartLegacyDriver()
     {
         if (!WinSvcStart(LegacyDriverSvcName))
         {
-            wprintf(L"!ERROR WinSvcStart failed with error: %u. Exiting...\n", GetLastError());
             return false;
         }
     }
     else
     {
-        wprintf(L"!ERROR WinSvcCreate failed with error: %u. Exiting...\n", GetLastError());
         return false;
     }
 
@@ -143,56 +201,16 @@ bool StopLegacyDriver()
 
     if (!WinSvcIsRunning(LegacyDriverSvcName, &isRunning))
     {
-        wprintf(L"The driver not installed. Exiting...\n");
-
         return true;
     }
 
     if (!WinSvcDelete(LegacyDriverSvcName))
     {
-        wprintf(L"!ERROR WinSvcDelete failed, exiting...\n");
-
         return false;
     }
 
     wprintf(L"Driver successfully uninstalled.\n");
 
     return true;
-}
-
-int main()
-{
-    ULONG testValue = 0xfefefefe;
-    HANDLE hConnection;
-    HRESULT hr;
-
-    if (!AdjustPrivileges())
-    {
-        wprintf(L"AdjustPrivileges failed with error: %u. Exiting...\n", GetLastError());
-
-        system("pause");
-
-        return 0;
-    }
-
-    StartLegacyDriver();
-
-    hr = CommunicationConnect(
-        DRV_NAME,
-        &testValue,
-        sizeof(ULONG),
-        &hConnection
-    );
-
-    if (FAILED(hr))
-    {
-        wprintf(L"CommunicationConnect failed with error: %d\n", hr);
-    }    
-
-    system("pause");
-
-    StopLegacyDriver();
-
-    return 0;
 }
 

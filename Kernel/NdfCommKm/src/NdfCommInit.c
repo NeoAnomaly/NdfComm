@@ -4,6 +4,7 @@
 #include "NdfCommUtils.h"
 #include "NdfCommDispatch.h"
 #include "NdfCommDebug.h"
+#include "NdfCommClient.h"
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(INIT, NdfCommInit)
@@ -67,7 +68,7 @@ NdfCommInit(
     RtlZeroMemory(&NdfCommGlobals, sizeof(NdfCommGlobals));
 
 	ExInitializeRundownProtection(&NdfCommGlobals.LibraryRundownRef);
-	NdfCommConcurentListInitialize(&NdfCommGlobals.ClientList);
+	NdfCommInitializeConcurentList(&NdfCommGlobals.ClientList);
 
 	NdfCommGlobals.MaxClientsCount = MaxClients;
 	NdfCommGlobals.ConnectNotifyCallback = ConnectNotifyCallback;
@@ -202,10 +203,9 @@ NdfCommRelease(
 		"Releasing..."
 	);
 
-	///
-	///
-	///
-	ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownRef);
+    ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownRef);
+
+    NdfCommDisconnectAllClients();
 
 	if (NdfCommGlobals.SymbolicLinkName)
 	{
@@ -232,7 +232,10 @@ NdfCommRelease(
         IoDeleteDevice(NdfCommGlobals.MessageDeviceObject);
     }
 
-	ExRundownCompleted(&NdfCommGlobals.LibraryRundownRef);
+    ExRundownCompleted(&NdfCommGlobals.LibraryRundownRef);
+
+    ASSERT(IsListEmpty(&NdfCommGlobals.ClientList.ListHead));
+    ASSERT(NdfCommGlobals.ClientList.Count == 0);
 
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,

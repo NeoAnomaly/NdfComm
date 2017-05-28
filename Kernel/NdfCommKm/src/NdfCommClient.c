@@ -4,13 +4,15 @@
 #include "NdfCommDebug.h"
 
 #ifdef ALLOC_PRAGMA
-#   pragma alloc_text(PAGE, NdfCommClientCreate)
-#   pragma alloc_text(PAGE, NdfCommClientFree)
-#   pragma alloc_text(PAGE, NdfCommClientReleaseWaiters)
+#   pragma alloc_text(PAGE, NdfCommCreateClient)
+#   pragma alloc_text(PAGE, NdfCommFreeClient)
+#   pragma alloc_text(PAGE, NdfCommReleaseClientWaiters)
+#   pragma alloc_text(PAGE, NdfCommDisconnectClient)
+#   pragma alloc_text(PAGE, NdfCommDisconnectAllClients)
 #endif // ALLOC_PRAGMA
 
 NTSTATUS
-NdfCommClientCreate(
+NdfCommCreateClient(
 	__deref_out PNDFCOMM_CLIENT* Client
 )
 {
@@ -47,7 +49,7 @@ NdfCommClientCreate(
 	ExInitializeRundownProtection(&client->MsgNotificationRundownRef);
 	ExInitializeFastMutex(&client->Lock);
 	KeInitializeEvent(&client->DisconnectEvent, NotificationEvent, FALSE);
-	NdfCommConcurentListInitialize(&client->ReplyWaiterList);
+	NdfCommInitializeConcurentList(&client->ReplyWaiterList);
 
 	*Client = client;
 
@@ -55,7 +57,7 @@ NdfCommClientCreate(
 }
 
 VOID
-NdfCommClientFree(
+NdfCommFreeClient(
 	__in PNDFCOMM_CLIENT Client
 )
 {
@@ -63,14 +65,14 @@ NdfCommClientFree(
 
 	if (Client)
 	{
-		NdfCommClientReleaseWaiters(Client);
+		//NdfCommReleaseClientWaiters(Client);
 
 		ExFreePoolWithTag(Client, NDFCOMM_CLIENT_MEM_TAG);
 	}
 }
 
 BOOLEAN
-NdfCommClientReleaseWaiters(
+NdfCommReleaseClientWaiters(
 	__in PNDFCOMM_CLIENT Client
 )
 {
@@ -96,4 +98,39 @@ NdfCommClientReleaseWaiters(
 	}
 	
 	return result;
+}
+
+VOID
+NdfCommDisconnectClient(
+    PNDFCOMM_CLIENT Client
+)
+{
+    PAGED_CODE();
+
+    NdfCommReleaseClientWaiters(Client);
+}
+
+VOID
+NdfCommDisconnectAllClients(
+    VOID
+)
+{
+    NdfCommConcurentListLock(&NdfCommGlobals.ClientList);
+
+    if (NdfCommGlobals.ClientList.Count > 0)
+    {
+        PNDFCOMM_CLIENT client = NULL;
+        PNDFCOMM_CONCURENT_LIST list = &NdfCommGlobals.ClientList;
+
+        ASSERT(!IsListEmpty(&list->ListHead));
+
+        for (PLIST_ENTRY entry = list->ListHead.Flink; entry != &list->ListHead; entry = entry->Flink)
+        {
+            client = CONTAINING_RECORD(entry, NDFCOMM_CLIENT, ListEntry);
+
+            NdfCommDisconnectClient(client);
+        }
+    }
+
+    NdfCommConcurentListUnlock(&NdfCommGlobals.ClientList);
 }

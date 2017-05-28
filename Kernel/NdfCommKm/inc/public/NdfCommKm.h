@@ -44,3 +44,8 @@ VOID
 NdfCommRelease(
     VOID
 );
+
+VOID
+NdfCommDisconnectClient(
+    PNDFCOMM_CLIENT Client
+);
