@@ -1,4 +1,4 @@
-#include "NdfCommpNtApi.h"
+#include "NdfCommNtApi.h"
 #include <assert.h>
 
 extern BOOLEAN CommunicationpNtApiInitialized = FALSE;

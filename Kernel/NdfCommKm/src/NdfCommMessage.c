@@ -3,11 +3,11 @@
 #include "NdfCommGlobalData.h"
 
 #ifdef ALLOC_PRAGMA
-#   pragma alloc_text(PAGE, NdfCommMessageDeliverToKm)
+#   pragma alloc_text(PAGE, NdfCommDeliverMessageToKm)
 #endif // ALLOC_PRAGMA
 
 NTSTATUS
-NdfCommMessageDeliverToKm(
+NdfCommDeliverMessageToKm(
 	__in PFILE_OBJECT FileObject,
 	__in const PVOID InputBuffer,
 	__in ULONG InputBufferSize,

@@ -3,7 +3,7 @@
 #include <ntddk.h>
 
 NTSTATUS
-NdfCommMessageDeliverToKm(
+NdfCommDeliverMessageToKm(
 	__in PFILE_OBJECT FileObject,
 	__in const PVOID InputBuffer,
 	__in ULONG InputBufferSize,

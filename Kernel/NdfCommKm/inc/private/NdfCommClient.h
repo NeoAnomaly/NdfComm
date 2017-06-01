@@ -20,16 +20,21 @@ typedef struct _NDFCOMM_CLIENT
 } NDFCOMM_CLIENT, *PNDFCOMM_CLIENT;
 
 NTSTATUS
-NdfCommClientCreate(
+NdfCommCreateClient(
 	__deref_out PNDFCOMM_CLIENT* Client
 );
 
 VOID
-NdfCommClientFree(
+NdfCommFreeClient(
 	__in PNDFCOMM_CLIENT Client
 );
 
 BOOLEAN
-NdfCommClientReleaseWaiters(
+NdfCommReleaseClientWaiters(
 	__in PNDFCOMM_CLIENT Client
+);
+
+VOID
+NdfCommDisconnectAllClients(
+    VOID
 );

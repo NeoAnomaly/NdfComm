@@ -38,7 +38,7 @@ struct _NDFCOMM_GLOBALS
 	///
 	///
 	ULONG MaxClientsCount;
-	LONG ClientsCount;
+	LONG ActiveClientsCount;
 	NDFCOMM_CONCURENT_LIST ClientList;
 
 } NdfCommGlobals;
