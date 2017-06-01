@@ -12,15 +12,30 @@
     <Filter Include="Header Files\Shared">
       <UniqueIdentifier>{fad34ff6-ca91-4526-881f-6972c98fc32d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Common">
+      <UniqueIdentifier>{041e70f8-1881-4497-a46b-e076d27097e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{46731780-b7ce-4e59-aff8-13b9d2e0c841}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Shared\LegacyDrvApi.h">
+      <Filter>Header Files\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\inc\DrvCommunication.h">
+      <Filter>Header Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Shared\DrvCommunicationShared.h">
       <Filter>Header Files\Shared</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\LegacyDrvMain.c">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\src\DrvCommunication.c">
+      <Filter>Source Files\Common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
