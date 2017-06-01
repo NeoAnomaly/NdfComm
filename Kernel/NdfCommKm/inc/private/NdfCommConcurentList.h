@@ -13,7 +13,7 @@ typedef struct _NDFCOMM_CONCURENT_LIST
 FORCEINLINE
 VOID
 NdfCommConcurentListInitialize(
-	__in PNDFCOMM_CONCURENT_LIST List
+	_In_ PNDFCOMM_CONCURENT_LIST List
 )
 {
 	List->Count = 0;
@@ -26,8 +26,8 @@ NdfCommConcurentListInitialize(
 FORCEINLINE
 VOID
 NdfCommConcurentListAdd(
-	__in PNDFCOMM_CONCURENT_LIST List,
-	__in PLIST_ENTRY Entry
+	_In_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
 )
 {
 	if (List && Entry)
@@ -45,8 +45,8 @@ NdfCommConcurentListAdd(
 FORCEINLINE
 VOID
 NdfCommConcurentListRemove(
-	__in PNDFCOMM_CONCURENT_LIST List,
-	__in PLIST_ENTRY Entry
+	_In_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
 )
 {
 	if (List && Entry)

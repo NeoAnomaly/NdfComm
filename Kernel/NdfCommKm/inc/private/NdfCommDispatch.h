@@ -4,6 +4,6 @@
 
 NTSTATUS
 NdfCommDispatch(
-	__in struct _DEVICE_OBJECT *DeviceObject,
-	__inout struct _IRP *Irp
+	_In_ PDEVICE_OBJECT DeviceObject,
+	_Inout_ PIRP Irp
 );
