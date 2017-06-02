@@ -156,18 +156,20 @@ NdfCommunicationConnect(
     return result;
 }
 
+_Check_return_
 HRESULT
 WINAPI
 NdfCommunicationSendMessage(
-    __in HANDLE Connection,
-    __in_opt LPVOID InputBuffer,
-    __in ULONG InputBufferSize,
-    __out_opt LPVOID OutputBuffer,
-    __in ULONG OutputBufferSize,
-    __out PULONG BytesReturned
+    _In_ HANDLE Connection,
+	_In_reads_bytes_opt_(InputBufferSize) LPVOID InputBuffer,
+    _In_ ULONG InputBufferSize,
+    _Out_writes_bytes_to_opt_(OutputBufferSize, BytesReturned) LPVOID OutputBuffer,
+    _In_ ULONG OutputBufferSize,
+    _Out_opt_ PULONG BytesReturned
 )
 {
     HRESULT result = S_OK;
+	ULONG bytesReturnedStub;
 
     if (!DeviceIoControl(
         Connection,
@@ -176,7 +178,7 @@ NdfCommunicationSendMessage(
         InputBufferSize,
         OutputBuffer,
         OutputBufferSize,
-        BytesReturned,
+        BytesReturned ? BytesReturned : &bytesReturnedStub,
         NULL
     ))
     {

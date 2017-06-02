@@ -30,14 +30,15 @@ typedef NTSTATUS
 	_Out_ PULONG ReturnOutputBufferLength
 	);
 
+_Check_return_
 NTSTATUS
 NdfCommInit(
-    __in PDRIVER_OBJECT DriverObject,
-    __in PWSTR DriverName,
-	__in PNDFCOMM_CONNECT_NOTIFY ConnectNotifyCallback,
-	__in PNDFCOMM_DISCONNECT_NOTIFY DisconnectNotifyCallback,
-	__in PNDFCOMM_MESSAGE_NOTIFY MessageNotifyCallback,
-	__in ULONG MaxClients
+	_In_ PDRIVER_OBJECT DriverObject,
+	_In_ PWSTR DriverName,
+	_In_ PNDFCOMM_CONNECT_NOTIFY ConnectNotifyCallback,
+	_In_ PNDFCOMM_DISCONNECT_NOTIFY DisconnectNotifyCallback,
+	_In_ PNDFCOMM_MESSAGE_NOTIFY MessageNotifyCallback,
+	_In_ ULONG MaxClients
 );
 
 VOID
@@ -47,5 +48,5 @@ NdfCommRelease(
 
 VOID
 NdfCommDisconnectClient(
-    PNDFCOMM_CLIENT Client
+    _In_ PNDFCOMM_CLIENT Client
 );

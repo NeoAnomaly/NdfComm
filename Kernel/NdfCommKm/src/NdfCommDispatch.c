@@ -4,28 +4,31 @@
 #include "NdfCommUtils.h"
 #include "NdfCommClient.h"
 #include "NdfCommMessage.h"
+#include "NdfCommDebug.h"
 
+_Check_return_
 NTSTATUS
 NdfCommpDispatchCreate(
-    __inout PFILE_OBJECT FileObject,
-    __in PIRP Irp
+    _Inout_ PFILE_OBJECT FileObject,
+    _In_ PIRP Irp
 );
 
 VOID
 NdfCommpDispatchCleanup(
-    __in PFILE_OBJECT FileObject
+	_In_ PFILE_OBJECT FileObject
 );
 
 VOID
 NdfCommpDispatchClose(
-    __in PFILE_OBJECT FileObject
+	_Inout_ PFILE_OBJECT FileObject
 );
 
+_Check_return_
 NTSTATUS
 NdfCommpDispatchControl(
-    __in PIO_STACK_LOCATION StackLocation,
-    __in PIRP Irp,
-    __out PULONG ReturnOutputBufferSize
+	_In_ PIO_STACK_LOCATION StackLocation,
+	_In_ PIRP Irp,
+	_Out_ PULONG ReturnOutputBufferSize
 );
 
 #ifdef ALLOC_PRAGMA
@@ -38,10 +41,11 @@ NdfCommpDispatchControl(
 #   pragma alloc_text(PAGE, NdfCommpDispatchControl)
 #endif // ALLOC_PRAGMA
 
+_Function_class_(DRIVER_DISPATCH)
 NTSTATUS
 NdfCommDispatch(
-    __in struct _DEVICE_OBJECT *DeviceObject,
-    __inout struct _IRP *Irp
+	_In_ PDEVICE_OBJECT DeviceObject,
+	_Inout_ PIRP Irp
 )
 {
     PAGED_CODE();
@@ -115,10 +119,11 @@ NdfCommDispatch(
     return status;
 }
 
+_Check_return_
 NTSTATUS
 NdfCommpDispatchCreate(
-    __inout PFILE_OBJECT FileObject,
-    __in PIRP Irp
+	_Inout_ PFILE_OBJECT FileObject,
+	_In_ PIRP Irp
 )
 {
     PAGED_CODE();
@@ -207,7 +212,7 @@ NdfCommpDispatchCreate(
 
 VOID
 NdfCommpDispatchCleanup(
-    __in PFILE_OBJECT FileObject
+	_In_ PFILE_OBJECT FileObject
 )
 {
     PAGED_CODE();
@@ -226,7 +231,7 @@ NdfCommpDispatchCleanup(
     ASSERT(clientsCount >= 0);
 
     ///
-    /// Stops messages delivering
+    /// Stops message delivering
     ///
     ExWaitForRundownProtectionRelease(&client->MsgNotificationRundownRef);
 
@@ -237,31 +242,32 @@ NdfCommpDispatchCleanup(
 
 VOID
 NdfCommpDispatchClose(
-    __in PFILE_OBJECT FileObject
+	_Inout_ PFILE_OBJECT FileObject
 )
 {
     PAGED_CODE();
 
     PNDFCOMM_CLIENT client = FileObject->FsContext;
 
-    ASSERT(client);
+	ASSERT(client);
 
-    FileObject->FsContext = NULL;
+	FileObject->FsContext = NULL;
 
     NdfCommConcurentListInterlockedRemove(&NdfCommGlobals.ClientList, &client->ListEntry);
 
     NdfCommFreeClient(client);
 }
 
+_Check_return_
 NTSTATUS
 NdfCommpDispatchControl(
-    __in PIO_STACK_LOCATION IrpSp,
-    __in PIRP Irp,
-    __out PULONG ReturnOutputBufferSize
+	_In_ PIO_STACK_LOCATION IrpSp,
+	_In_ PIRP Irp,
+	_Out_ PULONG ReturnOutputBufferSize
 )
 {
     PAGED_CODE();
-
+	
     NTSTATUS status = STATUS_SUCCESS;
     PVOID inputBuffer = IrpSp->Parameters.DeviceIoControl.Type3InputBuffer;
     ULONG inputBufferSize = IrpSp->Parameters.DeviceIoControl.InputBufferLength;
@@ -286,6 +292,7 @@ NdfCommpDispatchControl(
     switch (controlCode)
     {
     case NDFCOMM_GETMESSAGE:
+		status = STATUS_NOT_IMPLEMENTED;
         break;
 
     case NDFCOMM_SENDMESSAGE:
@@ -303,6 +310,7 @@ NdfCommpDispatchControl(
         break;
 
     case NDFCOMM_REPLYMESSAGE:
+		status = STATUS_NOT_IMPLEMENTED;
         break;
 
     default:

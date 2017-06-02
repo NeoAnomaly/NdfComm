@@ -12,10 +12,10 @@ struct _NDFCOMM_GLOBALS
     PDEVICE_OBJECT MessageDeviceObject;
 
 	///
-	/// Symbolic link name for our MessageDeviceObject.
+	/// Symbolic link name for our DeviceObject.
 	/// Used at library clean up
 	///
-    PUNICODE_STRING SymbolicLinkName;
+    UNICODE_STRING SymbolicLinkName;
 
 	///
 	/// The following section describes original IRP dispatching

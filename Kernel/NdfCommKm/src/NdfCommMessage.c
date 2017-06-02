@@ -8,13 +8,13 @@
 
 NTSTATUS
 NdfCommDeliverMessageToKm(
-	__in PFILE_OBJECT FileObject,
-	__in const PVOID InputBuffer,
-	__in ULONG InputBufferSize,
-	__out PVOID OutputBuffer,
-	__in ULONG OutputBufferSize,
-	__out PULONG ReturnOutputBufferSize,
-	__in KPROCESSOR_MODE Mode
+	_In_ PFILE_OBJECT FileObject,
+	_In_reads_bytes_(InputBufferSize) const PVOID InputBuffer,
+	_In_ ULONG InputBufferSize,
+	_Out_writes_bytes_to_(OutputBufferSize, *ReturnOutputBufferSize) PVOID OutputBuffer,
+	_In_ ULONG OutputBufferSize,
+	_Out_ PULONG ReturnOutputBufferSize,
+	_In_ KPROCESSOR_MODE Mode
 )
 {
 	PAGED_CODE();

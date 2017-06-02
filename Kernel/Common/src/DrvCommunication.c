@@ -21,6 +21,16 @@ ConnectHandler(
     UNREFERENCED_PARAMETER(ContextSize);
     UNREFERENCED_PARAMETER(ConnectionCookie);
 
+	DbgPrint(
+		"[ConnectHandler]\n"
+		"	Client          -> %p\n"
+		"	ClientContext   -> %p\n"
+		"	ContextSize     -> %u\n", 
+		Client, 
+		ClientContext, 
+		ContextSize
+	);
+
     return STATUS_SUCCESS;
 }
 
@@ -32,6 +42,12 @@ DisconnectHandler(
     PAGED_CODE();
 
     UNREFERENCED_PARAMETER(ConnectionCookie);
+
+	DbgPrint(
+		"[DisconnectHandler]\n"
+		"	ConnectionCookie -> %p\n", 
+		ConnectionCookie
+	);
 }
 
 NTSTATUS
@@ -52,6 +68,20 @@ MessageHandler(
     UNREFERENCED_PARAMETER(OutputBuffer);
     UNREFERENCED_PARAMETER(OutputBufferLength);
     UNREFERENCED_PARAMETER(ReturnOutputBufferLength);
+
+	DbgPrint(
+		"[MessageHandler]\n"
+		"	ConnectionCookie    -> %p\n"
+		"	InputBuffer         -> %p\n"
+		"	InputBufferLength   -> %u\n"
+		"	OutputBuffer        -> %p\n"
+		"	OutputBufferLength  -> %u\n", 
+		ConnectionCookie, 
+		InputBuffer, 
+		InputBufferLength, 
+		OutputBuffer, 
+		OutputBufferLength
+	);
 
     return STATUS_SUCCESS;
 }

@@ -31,7 +31,7 @@ NdfCommInit(
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,
 		0,
-		"Initializing..."
+		"Initializing library..."
 	);
 
 	if (
@@ -49,7 +49,7 @@ NdfCommInit(
 		NdfCommDebugTrace(
 			TRACE_LEVEL_ERROR,
 			0,
-			"!ERROR: One of the following parameters is not valid(NULL):\n"
+			"!ERROR: One of the following parameters is not valid(can't be NULL):\n"
 			"\tDriverName(%p)\n"
 			"\tConnectNotifyCallback(%p)\n"
 			"\tDisconnectNotifyCallback(%p)\n"
@@ -111,7 +111,7 @@ NdfCommInit(
     }
 
 	status = NdfCommUnicodeStringAlloc(
-		NdfCommGlobals.SymbolicLinkName,
+		&NdfCommGlobals.SymbolicLinkName,
 		NDFCOMM_MSG_MAX_CCH_NAME_SIZE * sizeof(WCHAR)
 	);
 	
@@ -128,7 +128,7 @@ NdfCommInit(
 	}
 
 	status = RtlUnicodeStringPrintf(
-		NdfCommGlobals.SymbolicLinkName, 
+		&NdfCommGlobals.SymbolicLinkName, 
 		NDFCOMM_MSG_SYMLINK_NAME_FMT, 
 		DriverName
 	);
@@ -142,13 +142,12 @@ NdfCommInit(
 			status
 		);
 
-		NdfCommUnicodeStringFree(NdfCommGlobals.SymbolicLinkName);
-		NdfCommGlobals.SymbolicLinkName = NULL;
+		NdfCommUnicodeStringFree(&NdfCommGlobals.SymbolicLinkName);
 
 		return status;
 	}
 
-    status = IoCreateSymbolicLink(NdfCommGlobals.SymbolicLinkName, &deviceName);
+    status = IoCreateSymbolicLink(&NdfCommGlobals.SymbolicLinkName, &deviceName);
 
     if (!NT_SUCCESS(status))
     {
@@ -162,8 +161,7 @@ NdfCommInit(
         IoDeleteDevice(NdfCommGlobals.MessageDeviceObject);
         NdfCommGlobals.MessageDeviceObject = NULL;
 
-		NdfCommUnicodeStringFree(NdfCommGlobals.SymbolicLinkName);
-		NdfCommGlobals.SymbolicLinkName = NULL;
+		NdfCommUnicodeStringFree(&NdfCommGlobals.SymbolicLinkName);
 
 		return status;
     }
@@ -184,7 +182,7 @@ NdfCommInit(
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,
 		0,
-		"Initializing complete"
+		"Library initialization complete"
 	);
 
     return status;
@@ -200,14 +198,14 @@ NdfCommRelease(
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,
 		0,
-		"Releasing..."
+		"Releasing library..."
 	);
 
     ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownRef);
 
     NdfCommDisconnectAllClients();
 
-	if (NdfCommGlobals.SymbolicLinkName)
+	if (NdfCommGlobals.SymbolicLinkName.Length)
 	{
 		NdfCommDebugTrace(
 			TRACE_LEVEL_VERBOSE,
@@ -215,10 +213,9 @@ NdfCommRelease(
 			"Deleting symbolic link..."
 		);
 
-		IoDeleteSymbolicLink(NdfCommGlobals.SymbolicLinkName);
+		IoDeleteSymbolicLink(&NdfCommGlobals.SymbolicLinkName);
 
-		NdfCommUnicodeStringFree(NdfCommGlobals.SymbolicLinkName);
-		NdfCommGlobals.SymbolicLinkName = NULL;
+		NdfCommUnicodeStringFree(&NdfCommGlobals.SymbolicLinkName);
 	}
 
     if (NdfCommGlobals.MessageDeviceObject)
@@ -240,6 +237,6 @@ NdfCommRelease(
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,
 		0,
-		"Releasing complete"
+		"Library releasing complete"
 	);
 }

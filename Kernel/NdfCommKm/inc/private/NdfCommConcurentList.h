@@ -13,7 +13,7 @@ typedef struct _NDFCOMM_CONCURENT_LIST
 FORCEINLINE
 VOID
 NdfCommInitializeConcurentList(
-	__in PNDFCOMM_CONCURENT_LIST List
+	_In_ PNDFCOMM_CONCURENT_LIST List
 )
 {
 	List->Count = 0;
@@ -26,7 +26,8 @@ NdfCommInitializeConcurentList(
 FORCEINLINE
 VOID
 NdfCommConcurentListLock(
-    __in PNDFCOMM_CONCURENT_LIST List
+    _In_ _Requires_lock_not_held_(List->Lock) _Acquires_lock_(List->Lock) 
+	PNDFCOMM_CONCURENT_LIST List
 )
 {
     ExAcquireFastMutex(&List->Lock);
@@ -35,7 +36,8 @@ NdfCommConcurentListLock(
 FORCEINLINE
 VOID
 NdfCommConcurentListUnlock(
-    __in PNDFCOMM_CONCURENT_LIST List
+	_In_ _Requires_lock_held_(List->Lock) _Releases_lock_(List->Lock) 
+	PNDFCOMM_CONCURENT_LIST List
 )
 {
     ExReleaseFastMutex(&List->Lock);
@@ -44,8 +46,8 @@ NdfCommConcurentListUnlock(
 FORCEINLINE
 VOID
 NdfCommConcurentListInterlockedAdd(
-	__in PNDFCOMM_CONCURENT_LIST List,
-	__in PLIST_ENTRY Entry
+	_In_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
 )
 {
 	if (List && Entry)
@@ -63,8 +65,8 @@ NdfCommConcurentListInterlockedAdd(
 FORCEINLINE
 VOID
 NdfCommConcurentListInterlockedRemove(
-	__in PNDFCOMM_CONCURENT_LIST List,
-	__in PLIST_ENTRY Entry
+	_In_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
 )
 {
 	if (List && Entry)

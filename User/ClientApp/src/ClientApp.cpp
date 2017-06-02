@@ -4,7 +4,9 @@
 #include <iostream>
 #include "WinSvcSup.h"
 #include "NdfCommUm.h"
+
 #include "LegacyDrvApi.h"
+#include "DrvCommunicationShared.h"
 
 const LPWSTR LegacyDriverSvcName = L"NdfCommLegacyDrv";
 const LPWSTR LegacyDriverFileName = L"LegacyDrv.sys";
@@ -15,202 +17,217 @@ bool StopLegacyDriver();
 
 int main()
 {
-    ULONG testValue = 0xfefefefe;
-    HANDLE hConnection = INVALID_HANDLE_VALUE;
-    HRESULT hr;
+	ULONG testValue = 0xfefefefe;
+	HANDLE hConnection = INVALID_HANDLE_VALUE;
+	HRESULT hr;
 
-    if (!AdjustPrivileges())
-    {
-        system("pause");
+	BYTE commandMessageBuffer[sizeof(COMMAND_MESSAGE)];
+	PCOMMAND_MESSAGE command = (PCOMMAND_MESSAGE)&commandMessageBuffer;
 
-        return 0;
-    }
+	if (!AdjustPrivileges())
+	{
+		system("pause");
 
-    if (StartLegacyDriver())
-    {
-        hr = NdfCommunicationConnect(
-            DRV_NAME,
-            &testValue,
-            sizeof(ULONG),
-            &hConnection
-        );
+		return 0;
+	}
 
-        if (SUCCEEDED(hr))
-        {
-            /*hr = NdfCommunicationSendMessage(
-                hConnection,
+	if (StartLegacyDriver())
+	{
+		hr = NdfCommunicationConnect(
+			DRV_NAME,
+			&testValue,
+			sizeof(ULONG),
+			&hConnection
+		);
 
-            )*/
-        }
-        else
-        {
-            wprintf(L"NdfCommunicationConnect failed with error: %d\n", hr);
-        }
-    }
+		if (SUCCEEDED(hr))
+		{
+			command->ApiVersion = ApiVersion;
+			command->Command = CommandStart;
 
-    system("pause");
+			hr = NdfCommunicationSendMessage(
+				hConnection,
+				command,
+				sizeof(COMMAND_MESSAGE),
+				NULL,
+				0,
+				NULL
+			);
 
-    if (hConnection != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(hConnection);
-        hConnection = INVALID_HANDLE_VALUE;
-    }
+			if (FAILED(hr))
+			{
+				wprintf(L"NdfCommunicationSendMessage(CommandStart) failed with error: %d\n", hr);
+			}
+		}
+		else
+		{
+			wprintf(L"NdfCommunicationConnect failed with error: %d\n", hr);
+		}
+	}
 
-    StopLegacyDriver();
+	system("pause");
 
-    return 0;
+	if (hConnection != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hConnection);
+		hConnection = INVALID_HANDLE_VALUE;
+	}
+
+	StopLegacyDriver();
+
+	return 0;
 }
 
 bool AdjustPrivileges()
 {
-    HANDLE hProcess = GetCurrentProcess();
-    HANDLE hToken;
-    LUID luid;
-    TOKEN_PRIVILEGES tp;
+	HANDLE hProcess = GetCurrentProcess();
+	HANDLE hToken;
+	LUID luid;
+	TOKEN_PRIVILEGES tp;
 
-    wprintf(L"Adjusting privilege...\n");
+	wprintf(L"Adjusting privilege...\n");
 
-    if (!OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
-    {
-        wprintf(L"OpenProcessToken failed with error: %u. Exiting...\n", GetLastError());
+	if (!OpenProcessToken(hProcess, TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken))
+	{
+		wprintf(L"OpenProcessToken failed with error: %u. Exiting...\n", GetLastError());
 
-        return false;
-    }
+		return false;
+	}
 
-    if (!LookupPrivilegeValue(NULL, SE_LOAD_DRIVER_NAME, &luid))
-    {
-        wprintf(L"LookupPrivilegeValue failed with error: %u. Exiting...\n", GetLastError());
+	if (!LookupPrivilegeValue(NULL, SE_LOAD_DRIVER_NAME, &luid))
+	{
+		wprintf(L"LookupPrivilegeValue failed with error: %u. Exiting...\n", GetLastError());
 
-        return false;
-    }
+		return false;
+	}
 
-    tp.PrivilegeCount = 1;
-    tp.Privileges[0].Luid = luid;
-    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+	tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL))
-    {
-        wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
+	if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL))
+	{
+		wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
 
-        return false;
-    }
+		return false;
+	}
 
-    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-    {
-        wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
+	if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+	{
+		wprintf(L"AdjustTokenPrivileges failed with error: %u. Exiting...\n", GetLastError());
 
-        return false;
-    }
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 bool StartLegacyDriver()
 {
-    BOOL isRunning = FALSE;
+	BOOL isRunning = FALSE;
 
-    wprintf(L"Start installing legacy driver...\n");
+	wprintf(L"Start installing legacy driver...\n");
 
-    if (WinSvcIsRunning(LegacyDriverSvcName, &isRunning))
-    {
-        wprintf(L"The driver already installed. Reinstalling...\n");
+	if (WinSvcIsRunning(LegacyDriverSvcName, &isRunning))
+	{
+		wprintf(L"The driver already installed. Reinstalling...\n");
 
-        if (!WinSvcDelete(LegacyDriverSvcName))
-        {
-            return false;
-        }
-    }
+		if (!WinSvcDelete(LegacyDriverSvcName))
+		{
+			return false;
+		}
+	}
 
-    ///
-    /// Build driver file path
-    ///
+	///
+	/// Build driver file path
+	///
 
-    WCHAR moduleFilePath[MAX_PATH] = { 0 };
-    WCHAR driveComponent[_MAX_DRIVE] = { 0 };
-    WCHAR dirComponent[MAX_PATH] = { 0 };
-    WCHAR driverFilePath[MAX_PATH] = { 0 };
+	WCHAR moduleFilePath[MAX_PATH] = { 0 };
+	WCHAR driveComponent[_MAX_DRIVE] = { 0 };
+	WCHAR dirComponent[MAX_PATH] = { 0 };
+	WCHAR driverFilePath[MAX_PATH] = { 0 };
 
-    if (!GetModuleFileName(NULL, moduleFilePath, MAX_PATH))
-    {
-        wprintf(L"!ERROR GetModuleFileName failed with error: %u. Exiting...\n", GetLastError());
-        return false;
-    }
+	if (!GetModuleFileName(NULL, moduleFilePath, MAX_PATH))
+	{
+		wprintf(L"!ERROR GetModuleFileName failed with error: %u. Exiting...\n", GetLastError());
+		return false;
+	}
 
-    int errorCode = _wsplitpath_s(
-        moduleFilePath, 
-        driveComponent, _MAX_DRIVE,
-        dirComponent, MAX_PATH, 
-        nullptr, 0, 
-        nullptr, 0
-    );
+	int errorCode = _wsplitpath_s(
+		moduleFilePath,
+		driveComponent, _MAX_DRIVE,
+		dirComponent, MAX_PATH,
+		nullptr, 0,
+		nullptr, 0
+	);
 
-    if (errorCode != 0)
-    {
-        wprintf(L"!ERROR _wsplitpath_s failed with error: %d. Exiting...\n", errorCode);
-        return false;
-    }
+	if (errorCode != 0)
+	{
+		wprintf(L"!ERROR _wsplitpath_s failed with error: %d. Exiting...\n", errorCode);
+		return false;
+	}
 
-    errorCode = wcscat_s(driverFilePath, MAX_PATH, driveComponent);
-    if (errorCode != 0)
-    {
-        wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
-        return false;
-    }
+	errorCode = wcscat_s(driverFilePath, MAX_PATH, driveComponent);
+	if (errorCode != 0)
+	{
+		wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
+		return false;
+	}
 
-    errorCode = wcscat_s(driverFilePath, MAX_PATH, dirComponent);
-    if (errorCode != 0)
-    {
-        wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
-        return false;
-    }
+	errorCode = wcscat_s(driverFilePath, MAX_PATH, dirComponent);
+	if (errorCode != 0)
+	{
+		wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
+		return false;
+	}
 
-    errorCode = wcscat_s(driverFilePath, MAX_PATH, LegacyDriverFileName);
-    if (errorCode != 0)
-    {
-        wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
-        return false;
-    }
+	errorCode = wcscat_s(driverFilePath, MAX_PATH, LegacyDriverFileName);
+	if (errorCode != 0)
+	{
+		wprintf(L"!ERROR wcscat_s failed with error: %d. Exiting...\n", errorCode);
+		return false;
+	}
 
-    ///
-    ///
-    ///
-    wprintf(L"Creating service %s\nFilePath: \"%s\"\n", LegacyDriverSvcName, driverFilePath);
+	///
+	///
+	///
+	wprintf(L"Creating service %s\nFilePath: \"%s\"\n", LegacyDriverSvcName, driverFilePath);
 
-    if (WinSvcCreate(LegacyDriverSvcName, driverFilePath))
-    {
-        if (!WinSvcStart(LegacyDriverSvcName))
-        {
-            return false;
-        }
-    }
-    else
-    {
-        return false;
-    }
+	if (WinSvcCreate(LegacyDriverSvcName, driverFilePath))
+	{
+		if (!WinSvcStart(LegacyDriverSvcName))
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
 
-    wprintf(L"Driver successfully installed.\n");
+	wprintf(L"Driver successfully installed.\n");
 
-    return true;
+	return true;
 }
 
 bool StopLegacyDriver()
 {
-    BOOL isRunning = FALSE;
+	BOOL isRunning = FALSE;
 
-    wprintf(L"Start uninstalling legacy driver...\n");
+	wprintf(L"Start uninstalling legacy driver...\n");
 
-    if (!WinSvcIsRunning(LegacyDriverSvcName, &isRunning))
-    {
-        return true;
-    }
+	if (!WinSvcIsRunning(LegacyDriverSvcName, &isRunning))
+	{
+		return true;
+	}
 
-    if (!WinSvcDelete(LegacyDriverSvcName))
-    {
-        return false;
-    }
+	if (!WinSvcDelete(LegacyDriverSvcName))
+	{
+		return false;
+	}
 
-    wprintf(L"Driver successfully uninstalled.\n");
+	wprintf(L"Driver successfully uninstalled.\n");
 
-    return true;
+	return true;
 }
 
