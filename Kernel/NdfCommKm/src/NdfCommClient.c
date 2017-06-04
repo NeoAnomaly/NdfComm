@@ -33,7 +33,10 @@ NdfCommCreateClient(
 		return STATUS_INVALID_PARAMETER;
 	}	
 	
-	client = ExAllocatePoolWithTag(PagedPool, sizeof(NDFCOMM_CLIENT), NDFCOMM_CLIENT_MEM_TAG);
+    ///
+    /// Allocate NonPagedPool because synchronization objects required resident memory storage
+    ///
+	client = ExAllocatePoolWithTag(NonPagedPool, sizeof(NDFCOMM_CLIENT), NDFCOMM_CLIENT_MEM_TAG);
 	if (!client)
 	{
 		NdfCommDebugTrace(

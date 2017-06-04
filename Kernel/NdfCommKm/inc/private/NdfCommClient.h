@@ -1,6 +1,8 @@
 #pragma once
 
 #include "NdfCommConcurentList.h"
+#include "NdfCommMessaging.h"
+
 #include <ntddk.h>
 
 typedef struct _NDFCOMM_CLIENT
@@ -14,7 +16,7 @@ typedef struct _NDFCOMM_CLIENT
 	
 	KEVENT DisconnectEvent;
 	BOOLEAN Disconnected;
-	//_FLT_MESSAGE_WAITER_QUEUE MsgQ;
+    NDFCOMM_MESSAGE_WAITER_QUEUE MessageQueue;
 	NDFCOMM_CONCURENT_LIST ReplyWaiterList;
 
 } NDFCOMM_CLIENT, *PNDFCOMM_CLIENT;

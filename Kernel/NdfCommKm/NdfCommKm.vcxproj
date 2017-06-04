@@ -23,7 +23,7 @@
     <ClCompile Include="src\NdfCommDebug.c" />
     <ClCompile Include="src\NdfCommDispatch.c" />
     <ClCompile Include="src\NdfCommInit.c" />
-    <ClCompile Include="src\NdfCommMessage.c" />
+    <ClCompile Include="src\NdfCommMessaging.c" />
     <ClCompile Include="src\NdfCommUtils.c" />
   </ItemGroup>
   <ItemGroup>
@@ -33,7 +33,7 @@
     <ClInclude Include="inc\private\NdfCommDispatch.h" />
     <ClInclude Include="inc\private\NdfCommGlobalData.h" />
     <ClInclude Include="inc\private\NdfCommDebug.h" />
-    <ClInclude Include="inc\private\NdfCommMessage.h" />
+    <ClInclude Include="inc\private\NdfCommMessaging.h" />
     <ClInclude Include="inc\private\NdfCommUtils.h" />
     <ClInclude Include="inc\public\NdfCommKm.h" />
   </ItemGroup>

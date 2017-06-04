@@ -41,10 +41,10 @@
     <ClInclude Include="inc\private\NdfCommDispatch.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
-    <ClInclude Include="inc\private\NdfCommMessage.h">
+    <ClInclude Include="inc\private\NdfCommDebug.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
-    <ClInclude Include="inc\private\NdfCommDebug.h">
+    <ClInclude Include="inc\private\NdfCommMessaging.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
   </ItemGroup>
@@ -61,10 +61,10 @@
     <ClCompile Include="src\NdfCommDispatch.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\NdfCommMessage.c">
+    <ClCompile Include="src\NdfCommDebug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\NdfCommDebug.c">
+    <ClCompile Include="src\NdfCommMessaging.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

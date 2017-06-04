@@ -3,7 +3,7 @@
 #include "NdfCommShared.h"
 #include "NdfCommUtils.h"
 #include "NdfCommClient.h"
-#include "NdfCommMessage.h"
+#include "NdfCommMessaging.h"
 #include "NdfCommDebug.h"
 
 _Check_return_
