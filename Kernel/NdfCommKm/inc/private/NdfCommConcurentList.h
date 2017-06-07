@@ -45,41 +45,55 @@ NdfCommConcurentListUnlock(
 
 FORCEINLINE
 VOID
-NdfCommConcurentListInterlockedAdd(
-	_In_ PNDFCOMM_CONCURENT_LIST List,
+NdfCommConcurentListAdd(
+	_Inout_ PNDFCOMM_CONCURENT_LIST List,
 	_In_ PLIST_ENTRY Entry
 )
 {
-	if (List && Entry)
-	{
-        NdfCommConcurentListLock(List);
+	InsertTailList(&List->ListHead, Entry);
 
-		InsertTailList(&List->ListHead, Entry);
+	List->Count++;
+}
 
-		List->Count++;
+FORCEINLINE
+VOID
+NdfCommConcurentListRemove(
+	_Inout_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
+)
+{
+	ASSERT(!IsListEmpty(&List->ListHead));
+	ASSERT(List->Count > 0);
 
-        NdfCommConcurentListUnlock(List);
-	}
+	RemoveEntryList(Entry);
+
+	List->Count--;
+}
+
+FORCEINLINE
+VOID
+NdfCommConcurentListInterlockedAdd(
+	_Inout_ PNDFCOMM_CONCURENT_LIST List,
+	_In_ PLIST_ENTRY Entry
+)
+{
+	NdfCommConcurentListLock(List);
+
+	NdfCommConcurentListAdd(List, Entry);
+
+	NdfCommConcurentListUnlock(List);
 }
 
 FORCEINLINE
 VOID
 NdfCommConcurentListInterlockedRemove(
-	_In_ PNDFCOMM_CONCURENT_LIST List,
+	_Inout_ PNDFCOMM_CONCURENT_LIST List,
 	_In_ PLIST_ENTRY Entry
 )
 {
-	if (List && Entry)
-	{
-        NdfCommConcurentListLock(List);
+	NdfCommConcurentListLock(List);
 
-		ASSERT(!IsListEmpty(&List->ListHead));
-		ASSERT(List->Count > 0);
-		
-		RemoveEntryList(Entry);
+	NdfCommConcurentListRemove(List, Entry);
 
-		List->Count--;
-
-        NdfCommConcurentListUnlock(List);
-	}
+	NdfCommConcurentListUnlock(List);
 }
