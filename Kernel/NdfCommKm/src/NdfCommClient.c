@@ -6,9 +6,7 @@
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(PAGE, NdfCommCreateClient)
 #   pragma alloc_text(PAGE, NdfCommFreeClient)
-#   pragma alloc_text(PAGE, NdfCommReleaseClientWaiters)
 #   pragma alloc_text(PAGE, NdfCommDisconnectClient)
-#   pragma alloc_text(PAGE, NdfCommDisconnectAllClients)
 #endif // ALLOC_PRAGMA
 
 _Check_return_
@@ -31,11 +29,11 @@ NdfCommCreateClient(
 		);
 
 		return STATUS_INVALID_PARAMETER;
-	}	
-	
-    ///
-    /// Allocate NonPagedPool because synchronization objects required resident memory storage
-    ///
+	}
+
+	///
+	/// Allocate NonPagedPool because synchronization objects required to be stored in the resident memory
+	///
 	client = ExAllocatePoolWithTag(NonPagedPool, sizeof(NDFCOMM_CLIENT), NDFCOMM_CLIENT_MEM_TAG);
 	if (!client)
 	{
@@ -47,12 +45,12 @@ NdfCommCreateClient(
 
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
-	
+
 	RtlZeroMemory(client, sizeof(NDFCOMM_CLIENT));
 
-	ExInitializeRundownProtection(&client->MsgNotificationRundownRef);
-	ExInitializeFastMutex(&client->Lock);
+	ExInitializeRundownProtection(&client->RundownProtect);
 	KeInitializeEvent(&client->DisconnectEvent, NotificationEvent, FALSE);
+	NdfCommInitializeMessageWaiterQueue(&client->MessageQueue);
 	NdfCommInitializeConcurentList(&client->ReplyWaiterList);
 
 	*Client = client;
@@ -69,72 +67,38 @@ NdfCommFreeClient(
 
 	if (Client)
 	{
-		//NdfCommReleaseClientWaiters(Client);
+		//NdfCommConcurentListLock(&Client->MessageQueue.Waiters);
+		ASSERT(IsListEmpty(&Client->MessageQueue.Waiters.ListHead));
+		//NdfCommConcurentListUnlock(&Client->MessageQueue.Waiters);
 
 		ExFreePoolWithTag(Client, NDFCOMM_CLIENT_MEM_TAG);
 	}
 }
 
-BOOLEAN
-NdfCommReleaseClientWaiters(
-	_In_ PNDFCOMM_CLIENT Client
+VOID
+NdfCommDisconnectClient(
+	_Inout_ PNDFCOMM_CLIENT Client
 )
 {
 	PAGED_CODE();
 
-	BOOLEAN result = FALSE;
-
 	if (Client)
 	{
-		ExAcquireFastMutex(&Client->Lock);
+		///
+		/// Check and set disconnected bit to avoid multiple wait on the RundownProtect
+		///
 
-		if (!Client->Disconnected)
+		if (InterlockedBitTestAndSet(&Client->State, NDFCOMM_CLIENT_STATE_DISCONNECTED_SHIFT) == FALSE)
 		{
+			///
+			/// Invalidate client
+			///
+			ExWaitForRundownProtectionRelease(&Client->RundownProtect);
+
 			/*KeSetEvent(&Client->DisconnectEvent, IO_NO_INCREMENT, FALSE);*/
 			/// FREE REPLY WAITERS
 
-			Client->Disconnected = TRUE;
-
-			result = TRUE;
+			ExRundownCompleted(&Client->RundownProtect);
 		}
-
-		ExReleaseFastMutex(&Client->Lock);
 	}
-	
-	return result;
-}
-
-VOID
-NdfCommDisconnectClient(
-	_In_ PNDFCOMM_CLIENT Client
-)
-{
-    PAGED_CODE();
-
-    NdfCommReleaseClientWaiters(Client);
-}
-
-VOID
-NdfCommDisconnectAllClients(
-    VOID
-)
-{
-    NdfCommConcurentListLock(&NdfCommGlobals.ClientList);
-
-    if (NdfCommGlobals.ClientList.Count > 0)
-    {
-        PNDFCOMM_CLIENT client = NULL;
-        PNDFCOMM_CONCURENT_LIST list = &NdfCommGlobals.ClientList;
-
-        ASSERT(!IsListEmpty(&list->ListHead));
-
-        for (PLIST_ENTRY entry = list->ListHead.Flink; entry != &list->ListHead; entry = entry->Flink)
-        {
-            client = CONTAINING_RECORD(entry, NDFCOMM_CLIENT, ListEntry);
-
-            NdfCommDisconnectClient(client);
-        }
-    }
-
-    NdfCommConcurentListUnlock(&NdfCommGlobals.ClientList);
 }

@@ -2,13 +2,27 @@
 #include "NdfCommGlobalData.h"
 #include "NdfCommShared.h"
 #include "NdfCommUtils.h"
-#include "NdfCommDispatch.h"
+#include "NdfCommProcessing.h"
 #include "NdfCommDebug.h"
 #include "NdfCommClient.h"
+
+_Function_class_(DRIVER_DISPATCH)
+NTSTATUS
+NdfCommpDispatch(
+	_In_ PDEVICE_OBJECT DeviceObject,
+	_Inout_ PIRP Irp
+);
+
+VOID
+NdfCommpDisconnectAllClients(
+	VOID
+);
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(INIT, NdfCommInit)
 #   pragma alloc_text(PAGE, NdfCommRelease)
+#   pragma alloc_text(PAGE, NdfCommpDispatch)
+#   pragma alloc_text(PAGE, NdfCommpDisconnectAllClients)
 #endif // ALLOC_PRAGMA
 
 _Check_return_
@@ -67,7 +81,7 @@ NdfCommInit(
 
     RtlZeroMemory(&NdfCommGlobals, sizeof(NdfCommGlobals));
 
-	ExInitializeRundownProtection(&NdfCommGlobals.LibraryRundownRef);
+	ExInitializeRundownProtection(&NdfCommGlobals.LibraryRundownProtect);
 	NdfCommInitializeConcurentList(&NdfCommGlobals.ClientList);
 
 	NdfCommGlobals.MaxClientsCount = MaxClients;
@@ -174,10 +188,10 @@ NdfCommInit(
     NdfCommGlobals.OriginalCloseDispatch = DriverObject->MajorFunction[IRP_MJ_CLOSE];
     NdfCommGlobals.OriginalControlDispatch = DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL];
 
-    DriverObject->MajorFunction[IRP_MJ_CREATE] = NdfCommDispatch;
-    DriverObject->MajorFunction[IRP_MJ_CLEANUP] = NdfCommDispatch;
-    DriverObject->MajorFunction[IRP_MJ_CLOSE] = NdfCommDispatch;
-    DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = NdfCommDispatch;
+    DriverObject->MajorFunction[IRP_MJ_CREATE] = NdfCommpDispatch;
+    DriverObject->MajorFunction[IRP_MJ_CLEANUP] = NdfCommpDispatch;
+    DriverObject->MajorFunction[IRP_MJ_CLOSE] = NdfCommpDispatch;
+    DriverObject->MajorFunction[IRP_MJ_DEVICE_CONTROL] = NdfCommpDispatch;
 
 	NdfCommDebugTrace(
 		TRACE_LEVEL_INFORMATION,
@@ -186,6 +200,35 @@ NdfCommInit(
 	);
 
     return status;
+}
+
+VOID
+NdfCommpDisconnectAllClients(
+	VOID
+)
+{
+	PAGED_CODE();
+
+	NdfCommConcurentListLock(&NdfCommGlobals.ClientList);
+
+	if (NdfCommGlobals.ClientList.Count > 0)
+	{
+		PNDFCOMM_CLIENT client = NULL;
+		PNDFCOMM_CONCURENT_LIST clientList = &NdfCommGlobals.ClientList;
+
+		ASSERT(!IsListEmpty(&clientList->ListHead));
+
+		for (PLIST_ENTRY entry = clientList->ListHead.Flink; entry != &clientList->ListHead; entry = entry->Flink)
+		{
+			client = CONTAINING_RECORD(entry, NDFCOMM_CLIENT, ListEntry);
+
+			NdfCommDisconnectClient(client);
+
+			NdfCommGlobals.DisconnectNotifyCallback(client->ConnectionCookie);
+		}
+	}
+
+	NdfCommConcurentListUnlock(&NdfCommGlobals.ClientList);
 }
 
 VOID
@@ -201,9 +244,9 @@ NdfCommRelease(
 		"Releasing library..."
 	);
 
-    ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownRef);
+    ExWaitForRundownProtectionRelease(&NdfCommGlobals.LibraryRundownProtect);
 
-    NdfCommDisconnectAllClients();
+    NdfCommpDisconnectAllClients();
 
 	if (NdfCommGlobals.SymbolicLinkName.Length)
 	{
@@ -229,7 +272,7 @@ NdfCommRelease(
         IoDeleteDevice(NdfCommGlobals.MessageDeviceObject);
     }
 
-    ExRundownCompleted(&NdfCommGlobals.LibraryRundownRef);
+    ExRundownCompleted(&NdfCommGlobals.LibraryRundownProtect);
 
     ASSERT(IsListEmpty(&NdfCommGlobals.ClientList.ListHead));
     ASSERT(NdfCommGlobals.ClientList.Count == 0);
@@ -239,4 +282,82 @@ NdfCommRelease(
 		0,
 		"Library releasing complete"
 	);
+}
+
+_Function_class_(DRIVER_DISPATCH)
+NTSTATUS
+NdfCommpDispatch(
+	_In_ PDEVICE_OBJECT DeviceObject,
+	_Inout_ PIRP Irp
+)
+{
+	PAGED_CODE();
+
+	NTSTATUS status = STATUS_SUCCESS;
+	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
+	ULONG returnBufferSize = 0;
+
+
+	if (DeviceObject != NdfCommGlobals.MessageDeviceObject)
+	{
+		switch (irpSp->MajorFunction)
+		{
+
+		case IRP_MJ_CREATE:
+			return NdfCommGlobals.OriginalCreateDispatch(DeviceObject, Irp);
+
+		case IRP_MJ_CLEANUP:
+			return NdfCommGlobals.OriginalCleanupDispatch(DeviceObject, Irp);
+
+		case IRP_MJ_CLOSE:
+			return NdfCommGlobals.OriginalCloseDispatch(DeviceObject, Irp);
+
+		case IRP_MJ_DEVICE_CONTROL:
+			return NdfCommGlobals.OriginalControlDispatch(DeviceObject, Irp);
+
+		default:
+			ASSERTMSG("Not implemented hook", FALSE);
+
+			return NdfCommCompleteIrp(Irp, STATUS_INVALID_DEVICE_STATE, 0);
+		}
+	}
+
+	switch (irpSp->MajorFunction)
+	{
+	case IRP_MJ_CREATE:
+
+		status = NdfCommpProcessCreateRequest(irpSp->FileObject, Irp);
+		break;
+
+	case IRP_MJ_CLEANUP:
+
+		NdfCommpProcessCleanupRequest(irpSp->FileObject);
+		break;
+
+	case IRP_MJ_CLOSE:
+
+		NdfCommpProcessCloseRequest(irpSp->FileObject);
+		break;
+
+	case IRP_MJ_DEVICE_CONTROL:
+
+		status = NdfCommpProcessControlRequest(
+			irpSp,
+			Irp,
+			&returnBufferSize
+		);
+		break;
+
+	default:
+		ASSERTMSG("Not implemented hook", FALSE);
+
+		status = STATUS_INVALID_DEVICE_STATE;
+	}
+
+	if (status != STATUS_PENDING)
+	{
+		NdfCommCompleteIrp(Irp, status, (ULONG_PTR)returnBufferSize);
+	}
+
+	return status;
 }

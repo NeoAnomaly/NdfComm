@@ -1,4 +1,9 @@
 #include "DrvCommunication.h"
+#include "DrvCommunicationShared.h"
+
+#ifndef Add2Ptr
+#define Add2Ptr(P,I) ((PVOID)((PUCHAR)(P) + (I)))
+#endif
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(PAGE, ConnectHandler)
@@ -8,7 +13,6 @@
 
 NTSTATUS
 ConnectHandler(
-    _In_ PNDFCOMM_CLIENT Client,
     _In_reads_bytes_opt_(ContextSize) PVOID ClientContext,
     _In_ ULONG ContextSize,
     _Outptr_result_maybenull_ PVOID *ConnectionCookie
@@ -16,17 +20,14 @@ ConnectHandler(
 {
     PAGED_CODE();
 
-    UNREFERENCED_PARAMETER(Client);
     UNREFERENCED_PARAMETER(ClientContext);
     UNREFERENCED_PARAMETER(ContextSize);
     UNREFERENCED_PARAMETER(ConnectionCookie);
 
 	DbgPrint(
 		"[ConnectHandler]\n"
-		"	Client          -> %p\n"
 		"	ClientContext   -> %p\n"
 		"	ContextSize     -> %u\n", 
-		Client, 
 		ClientContext, 
 		ContextSize
 	);
@@ -69,6 +70,12 @@ MessageHandler(
     UNREFERENCED_PARAMETER(OutputBufferLength);
     UNREFERENCED_PARAMETER(ReturnOutputBufferLength);
 
+	WCHAR lowerCase[13] = { 0 };
+	WCHAR upperCase[13] = { 0 };
+	UNICODE_STRING lowerCaseUnicodeString = { 0 };
+	UNICODE_STRING upperCaseUnicodeString = { 0 };
+	PCOMMAND_MESSAGE commandMessage = InputBuffer;
+
 	DbgPrint(
 		"[MessageHandler]\n"
 		"	ConnectionCookie    -> %p\n"
@@ -82,6 +89,16 @@ MessageHandler(
 		OutputBuffer, 
 		OutputBufferLength
 	);
+
+	DbgBreakPoint();
+
+	RtlCopyMemory(lowerCase, commandMessage->Data, 26);
+	RtlCopyMemory(upperCase, Add2Ptr(commandMessage->Data, 26), 26);
+
+	RtlInitUnicodeString(&lowerCaseUnicodeString, lowerCase);
+	RtlUpcaseUnicodeString(&upperCaseUnicodeString, &lowerCaseUnicodeString, TRUE);
+
+	RtlFreeUnicodeString(&upperCaseUnicodeString);
 
     return STATUS_SUCCESS;
 }

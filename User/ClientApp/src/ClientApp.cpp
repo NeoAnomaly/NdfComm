@@ -17,12 +17,20 @@ bool StopLegacyDriver();
 
 int main()
 {
+#define Add2Ptr(P,I) ((PVOID)((PUCHAR)(P) + (I)))
+
 	ULONG testValue = 0xfefefefe;
 	HANDLE hConnection = INVALID_HANDLE_VALUE;
 	HRESULT hr;
 
-	BYTE commandMessageBuffer[sizeof(COMMAND_MESSAGE)];
+	LPWSTR lowerCase = L"êîíôèãóðàöèÿ";
+	LPWSTR upperCase = L"ÊÎÍÔÈÃÓÐÀÖÈß";
+
+	BYTE commandMessageBuffer[sizeof(COMMAND_MESSAGE) + 26 + 26];
 	PCOMMAND_MESSAGE command = (PCOMMAND_MESSAGE)&commandMessageBuffer;
+
+	RtlCopyMemory(command->Data, lowerCase, 26);
+	RtlCopyMemory(Add2Ptr(command->Data, 26), upperCase, 26);
 
 	if (!AdjustPrivileges())
 	{
@@ -48,7 +56,7 @@ int main()
 			hr = NdfCommunicationSendMessage(
 				hConnection,
 				command,
-				sizeof(COMMAND_MESSAGE),
+				sizeof(COMMAND_MESSAGE) + 26 + 26,
 				NULL,
 				0,
 				NULL

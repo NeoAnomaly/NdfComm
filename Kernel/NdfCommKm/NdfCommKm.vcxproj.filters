@@ -38,13 +38,13 @@
     <ClInclude Include="inc\private\NdfCommConcurentList.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
-    <ClInclude Include="inc\private\NdfCommDispatch.h">
-      <Filter>Header Files\Private</Filter>
-    </ClInclude>
     <ClInclude Include="inc\private\NdfCommDebug.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
-    <ClInclude Include="inc\private\NdfCommMessaging.h">
+    <ClInclude Include="inc\private\NdfCommProcessing.h">
+      <Filter>Header Files\Private</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\private\NdfCommMessageWaiterQueue.h">
       <Filter>Header Files\Private</Filter>
     </ClInclude>
   </ItemGroup>
@@ -58,13 +58,13 @@
     <ClCompile Include="src\NdfCommClient.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\NdfCommDispatch.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\NdfCommDebug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\NdfCommMessaging.c">
+    <ClCompile Include="src\NdfCommProcessing.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NdfCommMessageWaiterQueue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

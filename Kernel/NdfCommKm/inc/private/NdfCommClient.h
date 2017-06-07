@@ -1,23 +1,42 @@
 #pragma once
 
 #include "NdfCommConcurentList.h"
-#include "NdfCommMessaging.h"
+#include "NdfCommMessageWaiterQueue.h"
 
 #include <ntddk.h>
+
+enum _NDFCOMM_CLIENT_STATE_SHIFT
+{
+	NDFCOMM_CLIENT_STATE_DISCONNECTED_SHIFT
+};
 
 typedef struct _NDFCOMM_CLIENT
 {
 	LIST_ENTRY ListEntry;
-	PVOID ConnectionCookie;
-	EX_RUNDOWN_REF MsgNotificationRundownRef;
-	FAST_MUTEX Lock;
 
-	UINT64 MessageIdCounter;
-	
+	EX_RUNDOWN_REF RundownProtect;	
+
+	///
+	/// Используется, как один из объектов ожидания при посылке обратного вызова
+	///
 	KEVENT DisconnectEvent;
-	BOOLEAN Disconnected;
+
+	UINT64 MessageIdGenerator;
+
+	///
+	/// Очередь ожидающих IRP
+	///
     NDFCOMM_MESSAGE_WAITER_QUEUE MessageQueue;
+
 	NDFCOMM_CONCURENT_LIST ReplyWaiterList;
+	
+
+	PVOID ConnectionCookie;
+
+	///
+	/// Флаг, показывающий, что все ожидающие IRP удалены
+	///
+	LONG State;
 
 } NDFCOMM_CLIENT, *PNDFCOMM_CLIENT;
 
@@ -32,12 +51,26 @@ NdfCommFreeClient(
 	_In_ PNDFCOMM_CLIENT Client
 );
 
-BOOLEAN
-NdfCommReleaseClientWaiters(
-	_In_ PNDFCOMM_CLIENT Client
+VOID
+NdfCommDisconnectClient(
+	_Inout_ PNDFCOMM_CLIENT Client
 );
 
+_Check_return_
+FORCEINLINE
+BOOLEAN
+NdfCommAcquireClient(
+	_In_ PNDFCOMM_CLIENT Client
+)
+{
+	return ExAcquireRundownProtection(&Client->RundownProtect);
+}
+
+FORCEINLINE
 VOID
-NdfCommDisconnectAllClients(
-    VOID
-);
+NdfCommReleaseClient(
+	_In_ PNDFCOMM_CLIENT Client
+)
+{
+	ExReleaseRundownProtection(&Client->RundownProtect);
+}
