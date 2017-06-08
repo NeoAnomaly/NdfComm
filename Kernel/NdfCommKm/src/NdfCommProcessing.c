@@ -15,14 +15,14 @@ NdfCommpDeliverMessageToKm(
 );
 
 NTSTATUS
-NdfCommpQueueGetMessageIrp(
+NdfCommpEnqueueGetMessageIrp(
 	_In_ PFILE_OBJECT FileObject,
 	_Inout_ PIRP Irp
 );
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(PAGE, NdfCommpDeliverMessageToKm)
-#   pragma alloc_text(PAGE, NdfCommpQueueGetMessageIrp)
+#   pragma alloc_text(PAGE, NdfCommpEnqueueGetMessageIrp)
 
 #   pragma alloc_text(PAGE, NdfCommpProcessCreateRequest)
 #   pragma alloc_text(PAGE, NdfCommpProcessCleanupRequest)
@@ -202,9 +202,14 @@ NdfCommpProcessControlRequest(
 
 	switch (controlCode)
 	{
+
+
 	case NDFCOMM_GETMESSAGE:
-		status = STATUS_NOT_IMPLEMENTED;
+
+		status = NdfCommpEnqueueGetMessageIrp(IrpSp->FileObject, Irp);
 		break;
+
+
 
 	case NDFCOMM_SENDMESSAGE:
 
@@ -220,9 +225,14 @@ NdfCommpProcessControlRequest(
 
 		break;
 
+
+
 	case NDFCOMM_REPLYMESSAGE:
+
 		status = STATUS_NOT_IMPLEMENTED;
 		break;
+
+
 
 	default:
 		status = STATUS_INVALID_PARAMETER;
@@ -288,7 +298,7 @@ NdfCommpDeliverMessageToKm(
 }
 
 NTSTATUS
-NdfCommpQueueGetMessageIrp(
+NdfCommpEnqueueGetMessageIrp(
     _In_ PFILE_OBJECT FileObject,
     _Inout_ PIRP Irp
 )
@@ -299,7 +309,7 @@ NdfCommpQueueGetMessageIrp(
 
     ASSERT(client);
 
-    return IoCsqInsertIrpEx(&client->MessageQueue.Csq, Irp, NULL, NULL);
+    return IoCsqInsertIrpEx(&client->PendedIrpQueue.Csq, Irp, NULL, NULL);
 }
 
 _Check_return_
@@ -315,5 +325,23 @@ NdfCommSendMessage(
 {
 	PAGED_CODE();
 
+	UNREFERENCED_PARAMETER(InputBuffer);
+	UNREFERENCED_PARAMETER(InputBufferLength);
+	UNREFERENCED_PARAMETER(ReplyBuffer);
+	UNREFERENCED_PARAMETER(ReplyBufferLength);
+	UNREFERENCED_PARAMETER(Timeout);
 
+	PNDFCOMM_PENDED_IRP_QUEUE pendedIrpQueue = NULL;
+//	ULONG requiredBufferLength = InputBufferLength;
+
+	if (NdfCommAcquireClient(Client))
+	{
+		pendedIrpQueue = &Client->PendedIrpQueue;
+
+
+
+		NdfCommReleaseClient(Client);
+	}
+
+	return STATUS_NOT_IMPLEMENTED;
 }

@@ -1,6 +1,7 @@
 #include "NdfCommPendedIrpQueue.h"
 #include "NdfCommClient.h"
 #include "NdfCommUtils.h"
+#include "NdfCommDebug.h"
 
 #include <ntintsafe.h>          /// for LONG_MAX
 
@@ -50,14 +51,27 @@ NdfCommpInsertIrp(
 	UNREFERENCED_PARAMETER(InsertContext);
 
 	NTSTATUS status = STATUS_SUCCESS;
-	PNDFCOMM_PENDED_IRP_QUEUE messageQueue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
-	PNDFCOMM_CLIENT client = CONTAINING_RECORD(messageQueue, NDFCOMM_CLIENT, MessageQueue);
+	PNDFCOMM_PENDED_IRP_QUEUE queue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
+	PNDFCOMM_CLIENT client = CONTAINING_RECORD(queue, NDFCOMM_CLIENT, PendedIrpQueue);
 	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
 	INT outputBufferLength = 0;
 
+	NdfCommDebugTrace(
+		TRACE_LEVEL_VERBOSE,
+		0,
+		"Enqueuing IRP(%p)...\n"
+		"	Client                    -> %p\n"
+		"	Client->PendedIrpQueue    -> %p\n"
+		"	IRP output buffer length  -> %u",
+		Irp,
+		client,
+		queue,
+		irpSp->Parameters.DeviceIoControl.OutputBufferLength
+	);
+
 	if (NdfCommAcquireClient(client))
 	{
-		NdfCommConcurentListAdd(&messageQueue->Waiters, &Irp->Tail.Overlay.ListEntry);
+		NdfCommConcurentListAdd(&queue->Waiters, &Irp->Tail.Overlay.ListEntry);
 
 		status = RtlULongToInt(irpSp->Parameters.DeviceIoControl.OutputBufferLength, &outputBufferLength);
 		if (!NT_SUCCESS(status))
@@ -65,14 +79,21 @@ NdfCommpInsertIrp(
 			outputBufferLength = INT_MAX;
 		}
 
-		if (outputBufferLength >= messageQueue->MinimumWaiterLength)
+		if (outputBufferLength >= queue->MinimumWaiterLength)
 		{
-			KeSetEvent(&messageQueue->Event, IO_NO_INCREMENT, FALSE);
+			KeSetEvent(&queue->Event, IO_NO_INCREMENT, FALSE);
 
-			messageQueue->MinimumWaiterLength = -1;
+			queue->MinimumWaiterLength = -1;
 		}
 
-		KeReleaseSemaphore(&messageQueue->Semaphore, SEMAPHORE_INCREMENT, 1, FALSE);
+		NdfCommDebugTrace(
+			TRACE_LEVEL_VERBOSE,
+			0,
+			"IRP(%p) enqueued. Signaling semaphore...",
+			Irp
+		);
+
+		KeReleaseSemaphore(&queue->Semaphore, SEMAPHORE_INCREMENT, 1, FALSE);
 
 		status = STATUS_PENDING;
 
@@ -80,6 +101,13 @@ NdfCommpInsertIrp(
 	}
 	else
 	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_VERBOSE,
+			0,
+			"IRP(%p) can't be enqued, because client's state is running down",
+			Irp
+		);
+
 		status = STATUS_PORT_DISCONNECTED;
 	}	
 
@@ -93,6 +121,13 @@ NdfCommpRemoveIrp(
 )
 {
 	PNDFCOMM_PENDED_IRP_QUEUE messageQueue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
+
+	NdfCommDebugTrace(
+		TRACE_LEVEL_VERBOSE,
+		0,
+		"Removing IRP(%p)...",
+		Irp
+	);
 
 	NdfCommConcurentListRemove(&messageQueue->Waiters, &Irp->Tail.Overlay.ListEntry);	
 }
@@ -114,6 +149,16 @@ NdfCommpGetNextIrp(
 	ASSERT(PeekContext);
 
 	requiredOutputBufferLength = *((PULONG)PeekContext);
+
+	NdfCommDebugTrace(
+		TRACE_LEVEL_VERBOSE,
+		0,
+		"Getting next IRP...\n"
+		"	Start IRP                 -> %p\n",
+		"	Required buffer length    -> %u",
+		Irp,
+		requiredOutputBufferLength
+	);
 
 	if (Irp)
 	{

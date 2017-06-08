@@ -2,6 +2,19 @@
 
 #include <Windows.h>
 
+typedef struct _NDFCOMM_MESSAGE_HEADER
+{
+	ULONG ReplyLength;
+	ULONGLONG MessageId;
+} NDFCOMM_MESSAGE_HEADER, *PNDFCOMM_MESSAGE_HEADER;
+
+typedef struct _NDFCOMM_REPLY_HEADER
+{
+	NTSTATUS Status;
+	ULONGLONG MessageId;
+} NDFCOMM_REPLY_HEADER, *PNDFCOMM_REPLY_HEADER;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,6 +38,16 @@ extern "C" {
 			_Out_writes_bytes_to_opt_(OutputBufferSize, BytesReturned) LPVOID OutputBuffer,
 			_In_ ULONG OutputBufferSize,
 			_Out_opt_ PULONG BytesReturned
+		);
+
+	_Check_return_
+		HRESULT
+		WINAPI
+		NdfCommunicationGetMessage(
+			_In_ HANDLE Connection,
+			_Out_writes_bytes_(MessageBufferSize) PVOID MessageBuffer,
+			_In_ ULONG MessageBufferSize,
+			_Inout_ LPOVERLAPPED Overlapped
 		);
 
 #ifdef __cplusplus

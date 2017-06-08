@@ -51,7 +51,7 @@ NdfCommCreateClient(
 	ExInitializeRundownProtection(&client->RundownProtect);
 	KeInitializeEvent(&client->DisconnectEvent, NotificationEvent, FALSE);
 	NdfCommInitializeConcurentList(&client->ReplyWaiterList);
-	status = NdfCommInitializeMessageWaiterQueue(&client->MessageQueue);
+	status = NdfCommInitializeMessageWaiterQueue(&client->PendedIrpQueue);
 	if (!NT_SUCCESS(status))
 	{
 		NdfCommDebugTrace(
@@ -79,9 +79,9 @@ NdfCommFreeClient(
 
 	if (Client)
 	{
-		//NdfCommConcurentListLock(&Client->MessageQueue.Waiters);
-		ASSERT(IsListEmpty(&Client->MessageQueue.Waiters.ListHead));
-		//NdfCommConcurentListUnlock(&Client->MessageQueue.Waiters);
+		//NdfCommConcurentListLock(&Client->PendedIrpQueue.Waiters);
+		ASSERT(IsListEmpty(&Client->PendedIrpQueue.Waiters.ListHead));
+		//NdfCommConcurentListUnlock(&Client->PendedIrpQueue.Waiters);
 
 		ExFreePoolWithTag(Client, NDFCOMM_CLIENT_MEM_TAG);
 	}

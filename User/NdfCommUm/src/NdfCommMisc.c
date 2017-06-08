@@ -5,17 +5,20 @@
 #include <strsafe.h>
 #include <intsafe.h>
 
+///
+/// Check size of the duplicated structures. See also comment in the NdfCommShared.h
+///
+
+C_ASSERT(sizeof(NDFCOMM_MESSAGE_HEADER) == sizeof(NDFCOMMP_MESSAGE_HEADER));
+C_ASSERT(sizeof(NDFCOMM_REPLY_HEADER) == sizeof(NDFCOMMP_REPLY_HEADER));
+
+
 HRESULT
 NdfCommunicationpBuildMsgDeviceName(
     __in LPCWSTR DriverName,
     __inout PUNICODE_STRING DeviceName
 );
 
-const ULONG acc = FILE_READ_DATA | FILE_WRITE_DATA | SYNCHRONIZE;
-const size_t ea = sizeof(FILE_FULL_EA_INFORMATION);
-const size_t off = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName[0]);
-const size_t t = sizeof(FILE_FULL_EA_INFORMATION) + sizeof(char) + 24;
-const size_t test = FIELD_OFFSET(FILE_FULL_EA_INFORMATION, EaName[0]) + sizeof(char) + 24;
 
 HRESULT
 NdfCommunicationpBuildMsgDeviceName(
@@ -186,4 +189,34 @@ NdfCommunicationSendMessage(
     }
 
     return result;
+}
+
+_Check_return_
+HRESULT
+WINAPI
+NdfCommunicationGetMessage(
+	_In_ HANDLE Connection,
+	_Out_writes_bytes_(MessageBufferSize) PVOID MessageBuffer,
+	_In_ ULONG MessageBufferSize,
+	_Inout_ LPOVERLAPPED Overlapped
+)
+{
+	HRESULT result = S_OK;
+	ULONG bytesReturned;
+
+	if (!DeviceIoControl(
+		Connection,
+		NDFCOMM_GETMESSAGE,
+		NULL,
+		0,
+		MessageBuffer,
+		MessageBufferSize,
+		&bytesReturned,
+		Overlapped
+	))
+	{
+		result = HRESULT_FROM_WIN32(GetLastError());
+	}
+
+	return result;
 }

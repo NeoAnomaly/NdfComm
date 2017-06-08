@@ -26,7 +26,7 @@ typedef struct _NDFCOMM_CLIENT
 	///
 	/// Очередь ожидающих IRP
 	///
-    NDFCOMM_PENDED_IRP_QUEUE MessageQueue;
+    NDFCOMM_PENDED_IRP_QUEUE PendedIrpQueue;
 
 	NDFCOMM_CONCURENT_LIST ReplyWaiterList;
 	
