@@ -331,14 +331,25 @@ NdfCommSendMessage(
 	UNREFERENCED_PARAMETER(ReplyBufferLength);
 	UNREFERENCED_PARAMETER(Timeout);
 
+	NTSTATUS status = STATUS_SUCCESS;
 	PNDFCOMM_PENDED_IRP_QUEUE pendedIrpQueue = NULL;
-//	ULONG requiredBufferLength = InputBufferLength;
+	ULONG requiredBufferLength = InputBufferLength + sizeof(NDFCOMMP_MESSAGE_HEADER);
+	PVOID waitableObjects[2] = { 0 };
 
 	if (NdfCommAcquireClient(Client))
 	{
 		pendedIrpQueue = &Client->PendedIrpQueue;
 
+		waitableObjects[0] = &Client->DisconnectEvent;
 
+		do
+		{
+			waitableObjects[1] = &pendedIrpQueue->Semaphore;
+
+			status = FsRtlCancel
+
+		} while (TRUE);
+		
 
 		NdfCommReleaseClient(Client);
 	}
