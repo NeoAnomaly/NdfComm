@@ -28,6 +28,8 @@ NdfCommpQueueGetMessageIrp(
 #   pragma alloc_text(PAGE, NdfCommpProcessCleanupRequest)
 #   pragma alloc_text(PAGE, NdfCommpProcessCloseRequest)
 #   pragma alloc_text(PAGE, NdfCommpProcessControlRequest)
+
+#   pragma alloc_text(PAGE, NdfCommSendMessage)
 #endif // ALLOC_PRAGMA
 
 _Check_return_
@@ -80,6 +82,7 @@ NdfCommpProcessCreateRequest(
 			if (NT_SUCCESS(status))
 			{
 				status = NdfCommGlobals.ConnectNotifyCallback(
+					client,
 					clientContext,
 					clientContextSize,
 					&client->ConnectionCookie
@@ -229,8 +232,6 @@ NdfCommpProcessControlRequest(
 	return status;
 }
 
-
-
 NTSTATUS
 NdfCommpDeliverMessageToKm(
 	_In_ PFILE_OBJECT FileObject,
@@ -299,4 +300,20 @@ NdfCommpQueueGetMessageIrp(
     ASSERT(client);
 
     return IoCsqInsertIrpEx(&client->MessageQueue.Csq, Irp, NULL, NULL);
+}
+
+_Check_return_
+NTSTATUS
+NdfCommSendMessage(
+	_In_ PNDFCOMM_CLIENT Client,
+	_In_reads_bytes_(InputBufferLength) PVOID InputBuffer,
+	_In_ ULONG InputBufferLength,
+	_Out_writes_bytes_opt_(*ReplyBufferLength) PVOID ReplyBuffer,
+	_Inout_opt_ PULONG ReplyBufferLength,
+	_In_opt_ PLARGE_INTEGER Timeout
+)
+{
+	PAGED_CODE();
+
+
 }

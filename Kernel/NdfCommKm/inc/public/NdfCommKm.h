@@ -9,6 +9,7 @@ typedef struct _NDFCOMM_CLIENT* PNDFCOMM_CLIENT;
 
 typedef NTSTATUS
 (NTAPI *PNDFCOMM_CONNECT_NOTIFY) (
+	_In_ PNDFCOMM_CLIENT Client,
 	_In_reads_bytes_opt_(ContextSize) PVOID ClientContext,
 	_In_ ULONG ContextSize,
 	_Outptr_result_maybenull_ PVOID *ConnectionCookie
@@ -43,4 +44,15 @@ NdfCommInit(
 VOID
 NdfCommRelease(
     VOID
+);
+
+_Check_return_
+NTSTATUS
+NdfCommSendMessage(
+	_In_ PNDFCOMM_CLIENT Client,
+	_In_reads_bytes_(InputBufferLength) PVOID InputBuffer,
+	_In_ ULONG InputBufferLength,
+	_Out_writes_bytes_opt_(*ReplyBufferLength) PVOID ReplyBuffer,
+	_Inout_opt_ PULONG ReplyBufferLength,
+	_In_opt_ PLARGE_INTEGER Timeout
 );

@@ -50,10 +50,22 @@ NdfCommCreateClient(
 
 	ExInitializeRundownProtection(&client->RundownProtect);
 	KeInitializeEvent(&client->DisconnectEvent, NotificationEvent, FALSE);
-	NdfCommInitializeMessageWaiterQueue(&client->MessageQueue);
 	NdfCommInitializeConcurentList(&client->ReplyWaiterList);
+	status = NdfCommInitializeMessageWaiterQueue(&client->MessageQueue);
+	if (!NT_SUCCESS(status))
+	{
+		NdfCommDebugTrace(
+			TRACE_LEVEL_ERROR,
+			0,
+			"!ERROR: NdfCommInitializeMessageWaiterQueue failed with status: %d",
+			status
+		);
+	}
 
-	*Client = client;
+	if (NT_SUCCESS(status))
+	{
+		*Client = client;
+	}	
 
 	return status;
 }

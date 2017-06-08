@@ -22,7 +22,7 @@
     <ClCompile Include="src\NdfCommClient.c" />
     <ClCompile Include="src\NdfCommDebug.c" />
     <ClCompile Include="src\NdfCommInit.c" />
-    <ClCompile Include="src\NdfCommMessageWaiterQueue.c" />
+    <ClCompile Include="src\NdfCommPendedIrpQueue.c" />
     <ClCompile Include="src\NdfCommProcessing.c" />
     <ClCompile Include="src\NdfCommUtils.c" />
   </ItemGroup>
@@ -32,7 +32,7 @@
     <ClInclude Include="inc\private\NdfCommConcurentList.h" />
     <ClInclude Include="inc\private\NdfCommGlobalData.h" />
     <ClInclude Include="inc\private\NdfCommDebug.h" />
-    <ClInclude Include="inc\private\NdfCommMessageWaiterQueue.h" />
+    <ClInclude Include="inc\private\NdfCommPendedIrpQueue.h" />
     <ClInclude Include="inc\private\NdfCommProcessing.h" />
     <ClInclude Include="inc\private\NdfCommUtils.h" />
     <ClInclude Include="inc\public\NdfCommKm.h" />

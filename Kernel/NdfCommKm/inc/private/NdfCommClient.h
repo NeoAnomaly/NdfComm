@@ -1,7 +1,7 @@
 #pragma once
 
 #include "NdfCommConcurentList.h"
-#include "NdfCommMessageWaiterQueue.h"
+#include "NdfCommPendedIrpQueue.h"
 
 #include <ntddk.h>
 
@@ -26,7 +26,7 @@ typedef struct _NDFCOMM_CLIENT
 	///
 	/// Очередь ожидающих IRP
 	///
-    NDFCOMM_MESSAGE_WAITER_QUEUE MessageQueue;
+    NDFCOMM_PENDED_IRP_QUEUE MessageQueue;
 
 	NDFCOMM_CONCURENT_LIST ReplyWaiterList;
 	

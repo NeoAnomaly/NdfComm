@@ -3,10 +3,6 @@
 #include <ntddk.h>
 #include "NdfCommConcurentList.h"
 
-
-
-
-
 _Check_return_
 NTSTATUS
 NdfCommpProcessCreateRequest(
