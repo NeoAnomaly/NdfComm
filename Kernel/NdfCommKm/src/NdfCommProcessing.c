@@ -331,8 +331,9 @@ NdfCommSendMessage(
 	UNREFERENCED_PARAMETER(ReplyBufferLength);
 	UNREFERENCED_PARAMETER(Timeout);
 
+	NTSTATUS status = STATUS_SUCCESS;
 	PNDFCOMM_PENDED_IRP_QUEUE pendedIrpQueue = NULL;
-//	ULONG requiredBufferLength = InputBufferLength;
+	ULONG requiredBufferLength = InputBufferLength + sizeof(NDFCOMMP_MESSAGE_HEADER);
 
 	if (NdfCommAcquireClient(Client))
 	{
@@ -342,6 +343,11 @@ NdfCommSendMessage(
 
 		NdfCommReleaseClient(Client);
 	}
+	else
+	{
+		status = STATUS_PORT_DISCONNECTED;
+	}
 
-	return STATUS_NOT_IMPLEMENTED;
+
+	return status;
 }

@@ -28,7 +28,7 @@ NdfCommInitializeMessageWaiterQueue(
 	KeInitializeSemaphore(&MsgQueue->Semaphore, 0, LONG_MAX);
 	KeInitializeEvent(&MsgQueue->Event, NotificationEvent, FALSE);
 
-	NdfCommInitializeConcurentList(&MsgQueue->Waiters);
+	NdfCommInitializeConcurentList(&MsgQueue->IrpList);
 
 	return IoCsqInitializeEx(
 		&MsgQueue->Csq,
@@ -71,7 +71,7 @@ NdfCommpInsertIrp(
 
 	if (NdfCommAcquireClient(client))
 	{
-		NdfCommConcurentListAdd(&queue->Waiters, &Irp->Tail.Overlay.ListEntry);
+		NdfCommConcurentListAdd(&queue->IrpList, &Irp->Tail.Overlay.ListEntry);
 
 		status = RtlULongToInt(irpSp->Parameters.DeviceIoControl.OutputBufferLength, &outputBufferLength);
 		if (!NT_SUCCESS(status))
@@ -129,7 +129,7 @@ NdfCommpRemoveIrp(
 		Irp
 	);
 
-	NdfCommConcurentListRemove(&messageQueue->Waiters, &Irp->Tail.Overlay.ListEntry);	
+	NdfCommConcurentListRemove(&messageQueue->IrpList, &Irp->Tail.Overlay.ListEntry);
 }
 
 PIRP
@@ -140,7 +140,7 @@ NdfCommpGetNextIrp(
 )
 {
 	PNDFCOMM_PENDED_IRP_QUEUE messageQueue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
-	PLIST_ENTRY listHead = &messageQueue->Waiters.ListHead;
+	PLIST_ENTRY listHead = &messageQueue->IrpList.ListHead;
 	PLIST_ENTRY nextEntry = NULL;
 	PIRP nextIrp = NULL;
 	PIO_STACK_LOCATION nextIrpSp = NULL;
@@ -195,7 +195,7 @@ NdfCommpAcquireQueueLock(
 
 	PNDFCOMM_PENDED_IRP_QUEUE messageQueue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
 
-	NdfCommConcurentListLock(&messageQueue->Waiters);
+	NdfCommConcurentListLock(&messageQueue->IrpList);
 }
 
 VOID
@@ -208,7 +208,7 @@ NdfCommpReleaseQueueLock(
 
 	PNDFCOMM_PENDED_IRP_QUEUE messageQueue = CONTAINING_RECORD(Csq, NDFCOMM_PENDED_IRP_QUEUE, Csq);
 
-	NdfCommConcurentListUnlock(&messageQueue->Waiters);
+	NdfCommConcurentListUnlock(&messageQueue->IrpList);
 }
 
 VOID

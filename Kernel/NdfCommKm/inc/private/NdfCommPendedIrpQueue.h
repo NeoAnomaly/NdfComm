@@ -7,7 +7,7 @@
 typedef struct _NDFCOMM_PENDED_IRP_QUEUE
 {
 	IO_CSQ Csq;
-	NDFCOMM_CONCURENT_LIST Waiters;
+	NDFCOMM_CONCURENT_LIST IrpList;
 	INT MinimumWaiterLength;
 	KSEMAPHORE Semaphore;
 	KEVENT Event;

@@ -2,6 +2,7 @@
 #include "NdfCommShared.h"
 #include "NdfCommGlobalData.h"
 #include "NdfCommDebug.h"
+#include "NdfCommUtils.h"
 
 #ifdef ALLOC_PRAGMA
 #   pragma alloc_text(PAGE, NdfCommCreateClient)
@@ -77,10 +78,12 @@ NdfCommFreeClient(
 {
 	PAGED_CODE();
 
+	ASSERT(Client);
+
 	if (Client)
 	{
 		//NdfCommConcurentListLock(&Client->PendedIrpQueue.Waiters);
-		ASSERT(IsListEmpty(&Client->PendedIrpQueue.Waiters.ListHead));
+		ASSERT(IsListEmpty(&Client->PendedIrpQueue.IrpList.ListHead));
 		//NdfCommConcurentListUnlock(&Client->PendedIrpQueue.Waiters);
 
 		ExFreePoolWithTag(Client, NDFCOMM_CLIENT_MEM_TAG);
@@ -94,21 +97,45 @@ NdfCommDisconnectClient(
 {
 	PAGED_CODE();
 
+	PIRP irp = NULL;
+	ULONG peekContext = 0;
+
+	ASSERT(Client);
+
 	if (Client)
 	{
 		///
 		/// Check and set disconnected bit to avoid multiple wait on the RundownProtect
 		///
 
-		if (InterlockedBitTestAndSet(&Client->State, NDFCOMM_CLIENT_STATE_DISCONNECTED_SHIFT) == FALSE)
+		if (InterlockedBitTestAndSet(&Client->State, NDFCOMM_CLIENT_STATE_CONNECTION_BROKEN_BIT) == FALSE)
 		{
+			///
+			///
+			///
+
+			KeSetEvent(&Client->DisconnectEvent, IO_NO_INCREMENT, FALSE);			
+
 			///
 			/// Invalidate client
 			///
 			ExWaitForRundownProtectionRelease(&Client->RundownProtect);
 
-			/*KeSetEvent(&Client->DisconnectEvent, IO_NO_INCREMENT, FALSE);*/
-			/// FREE REPLY WAITERS
+			///
+			/// remove all pended IRPs
+			///
+			while (TRUE)
+			{
+				irp = IoCsqRemoveNextIrp(&Client->PendedIrpQueue.Csq, &peekContext);
+
+				if (!irp)
+				{
+					break;
+				}
+
+				NdfCommCompleteIrp(irp, STATUS_PORT_DISCONNECTED, 0);
+			}
+
 
 			ExRundownCompleted(&Client->RundownProtect);
 		}
