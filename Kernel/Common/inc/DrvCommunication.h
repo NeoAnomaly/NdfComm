@@ -6,6 +6,7 @@
 
 NTSTATUS
 ConnectHandler(
+    _In_ PNDFCOMM_CLIENT Client,
     _In_reads_bytes_opt_(ContextSize) PVOID ClientContext,
     _In_ ULONG ContextSize,
     _Outptr_result_maybenull_ PVOID *ConnectionCookie

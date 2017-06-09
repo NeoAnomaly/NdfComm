@@ -13,6 +13,7 @@
 
 NTSTATUS
 ConnectHandler(
+    _In_ PNDFCOMM_CLIENT Client,
     _In_reads_bytes_opt_(ContextSize) PVOID ClientContext,
     _In_ ULONG ContextSize,
     _Outptr_result_maybenull_ PVOID *ConnectionCookie
@@ -26,8 +27,10 @@ ConnectHandler(
 
 	DbgPrint(
 		"[ConnectHandler]\n"
+        "	Client          -> %p\n"
 		"	ClientContext   -> %p\n"
 		"	ContextSize     -> %u\n", 
+        Client,
 		ClientContext, 
 		ContextSize
 	);
@@ -90,7 +93,7 @@ MessageHandler(
 		OutputBufferLength
 	);
 
-	DbgBreakPoint();
+	//DbgBreakPoint();
 
 	RtlCopyMemory(lowerCase, commandMessage->Data, 26);
 	RtlCopyMemory(upperCase, Add2Ptr(commandMessage->Data, 26), 26);
