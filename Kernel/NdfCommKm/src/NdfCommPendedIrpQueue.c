@@ -129,6 +129,8 @@ NdfCommpRemoveIrp(
 		Irp
 	);
 
+	NdfCommDebugBreak();
+
 	NdfCommConcurentListRemove(&messageQueue->IrpList, &Irp->Tail.Overlay.ListEntry);
 }
 
@@ -154,7 +156,7 @@ NdfCommpGetNextIrp(
 		TRACE_LEVEL_VERBOSE,
 		0,
 		"Getting next IRP...\n"
-		"	Start IRP                 -> %p\n",
+		"	Start IRP                 -> %p\n"
 		"	Required buffer length    -> %u",
 		Irp,
 		requiredOutputBufferLength

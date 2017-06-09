@@ -333,7 +333,7 @@ NdfCommSendMessage(
 
 	NTSTATUS status = STATUS_SUCCESS;
 	PNDFCOMM_PENDED_IRP_QUEUE pendedIrpQueue = NULL;
-	ULONG requiredBufferLength = InputBufferLength + sizeof(NDFCOMMP_MESSAGE_HEADER);
+//	ULONG requiredBufferLength = InputBufferLength + sizeof(NDFCOMMP_MESSAGE_HEADER);
 	PVOID waitableObjects[2] = { 0 };
 
 	if (NdfCommAcquireClient(Client))
@@ -346,7 +346,7 @@ NdfCommSendMessage(
 		{
 			waitableObjects[1] = &pendedIrpQueue->Semaphore;
 
-			status = FsRtlCancel
+			//status = KeWaitForMultipleObjects();
 
 		} while (TRUE);
 
