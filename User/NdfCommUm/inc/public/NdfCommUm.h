@@ -2,19 +2,6 @@
 
 #include <Windows.h>
 
-typedef struct _NDFCOMM_MESSAGE_HEADER
-{
-	ULONG ReplyLength;
-	ULONGLONG MessageId;
-} NDFCOMM_MESSAGE_HEADER, *PNDFCOMM_MESSAGE_HEADER;
-
-typedef struct _NDFCOMM_REPLY_HEADER
-{
-	NTSTATUS Status;
-	ULONGLONG MessageId;
-} NDFCOMM_REPLY_HEADER, *PNDFCOMM_REPLY_HEADER;
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -1,28 +1,6 @@
 #pragma once
 
 ///
-/// The following two structures the same as structures defined
-/// in the NdfCommUm.h
-/// Они объявлены повторно для того, чтобы не заводить отдельного
-/// публичного shared файла только для объявления этих структур.
-/// Вместо этого мы должны ручками поддерживать их актуальность.
-/// В файле NdfCommMisc.c выполняется проверка равенства размеров
-/// этих структур.
-///
-
-typedef struct _NDFCOMMP_MESSAGE_HEADER
-{
-	ULONG ReplyLength;
-	ULONGLONG MessageId;
-} NDFCOMMP_MESSAGE_HEADER, *PNDFCOMMP_MESSAGE_HEADER;
-
-typedef struct _NDFCOMMP_REPLY_HEADER
-{
-	NTSTATUS Status;
-	ULONGLONG MessageId;
-} NDFCOMMP_REPLY_HEADER, *PNDFCOMMP_REPLY_HEADER;
-
-///
 /// Device type the same as FILE_DEVICE_UNKNOWN
 ///
 #define NDFCOMM_DEVICE_TYPE (0x00000022)

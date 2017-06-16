@@ -5,13 +5,6 @@
 #include <strsafe.h>
 #include <intsafe.h>
 
-///
-/// Check size of the duplicated structures. See also comment in the NdfCommShared.h
-///
-
-C_ASSERT(sizeof(NDFCOMM_MESSAGE_HEADER) == sizeof(NDFCOMMP_MESSAGE_HEADER));
-C_ASSERT(sizeof(NDFCOMM_REPLY_HEADER) == sizeof(NDFCOMMP_REPLY_HEADER));
-
 
 HRESULT
 NdfCommunicationpBuildMsgDeviceName(

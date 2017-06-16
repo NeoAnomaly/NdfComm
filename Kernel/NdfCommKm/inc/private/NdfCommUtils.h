@@ -6,9 +6,9 @@
 FORCEINLINE
 NTSTATUS
 NdfCommCompleteIrp(
-    __in PIRP Irp,
-    __in NTSTATUS Status,
-    __in ULONG_PTR Info
+    _Inout_ PIRP Irp,
+    _In_ NTSTATUS Status,
+    _In_ ULONG_PTR Info
 )
 {
     Irp->IoStatus.Status = Status;
