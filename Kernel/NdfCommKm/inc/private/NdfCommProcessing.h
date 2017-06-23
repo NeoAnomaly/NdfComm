@@ -1,7 +1,8 @@
 #pragma once
 
-#include <ntddk.h>
 #include "NdfCommConcurentList.h"
+
+#include <ntifs.h>
 
 _Check_return_
 NTSTATUS

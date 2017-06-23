@@ -28,7 +28,7 @@ int main()
 
 	BYTE commandMessageBuffer[sizeof(COMMAND_MESSAGE) + 26 + 26];
 	PCOMMAND_MESSAGE command = (PCOMMAND_MESSAGE)&commandMessageBuffer;
-    BYTE getMessageBuffer[12];
+    BYTE getMessageBuffer[26+26];
 
 	RtlCopyMemory(command->Data, lowerCase, 26);
 	RtlCopyMemory(Add2Ptr(command->Data, 26), upperCase, 26);
@@ -51,6 +51,25 @@ int main()
 
 		if (SUCCEEDED(hr))
 		{
+            OVERLAPPED ovlp = { 0 };
+            ovlp.hEvent = CreateEvent(nullptr, TRUE, TRUE, nullptr);
+
+            hr = NdfCommunicationGetMessage(
+                hConnection,
+                getMessageBuffer,
+                sizeof(getMessageBuffer),
+                &ovlp
+            );
+
+            if (FAILED(hr) && hr != HRESULT_FROM_WIN32(ERROR_IO_PENDING))
+            {
+                wprintf(L"NdfCommunicationGetMessage failed with error: %d\n", hr);
+            }
+
+			///
+			///
+			///
+
 			command->ApiVersion = ApiVersion;
 			command->Command = CommandStart;
 
@@ -68,20 +87,19 @@ int main()
 				wprintf(L"NdfCommunicationSendMessage(CommandStart) failed with error: %d\n", hr);
 			}
 
-            OVERLAPPED ovlp = { 0 };
-            ovlp.hEvent = CreateEvent(nullptr, TRUE, TRUE, nullptr);
+			DWORD bytesReturned = 0;
 
-            hr = NdfCommunicationGetMessage(
-                hConnection,
-                getMessageBuffer,
-                sizeof(getMessageBuffer),
-                &ovlp
-            );
 
-            if (FAILED(hr) && hr != HRESULT_FROM_WIN32(ERROR_IO_PENDING))
-            {
-                wprintf(L"NdfCommunicationGetMessage failed with error: %d\n", hr);
-            }
+			if (!GetOverlappedResult(hConnection, &ovlp, &bytesReturned, FALSE))
+			{
+				wprintf(L"GetOverlappedResult failed with error: %d\n", GetLastError());
+			}
+			else
+			{
+				wprintf(L"GetOverlappedResult bytes returned: %d\n", bytesReturned);
+			}
+
+
 		}
 		else
 		{

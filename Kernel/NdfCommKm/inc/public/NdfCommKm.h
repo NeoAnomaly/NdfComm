@@ -1,6 +1,13 @@
 #pragma once
 
-#include <ntddk.h>
+#ifndef _NTDDK_INCLUDED_
+#	include <ntifs.h>
+#endif // !_NTDDK_INCLUDED_
+
+#define NDFCOMM_NANO_2_MS_FACTOR (10000)
+
+#define NDFCOMM_DECLARE_RELATIVE_TIMEOUT(Variable, DelayMs)								\
+	LARGE_INTEGER Variable = { (ULONG)(NDFCOMM_NANO_2_MS_FACTOR * DelayMs * -1), -1 };
 
 ///
 /// Opaque public types
@@ -43,7 +50,7 @@ NdfCommInit(
 
 VOID
 NdfCommRelease(
-    VOID
+	VOID
 );
 
 _Check_return_

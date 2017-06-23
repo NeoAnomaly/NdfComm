@@ -129,8 +129,6 @@ NdfCommpRemoveIrp(
 		Irp
 	);
 
-	NdfCommDebugBreak();
-
 	NdfCommConcurentListRemove(&messageQueue->IrpList, &Irp->Tail.Overlay.ListEntry);
 }
 

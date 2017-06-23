@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ntddk.h>
+#include <ntifs.h>
 
 #define NDFCOMM_STRING_MEM_TAG		'10CN'
 #define NDFCOMM_CLIENT_MEM_TAG		'20CN'

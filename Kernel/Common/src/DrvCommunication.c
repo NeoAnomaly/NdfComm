@@ -35,6 +35,8 @@ ConnectHandler(
 		ContextSize
 	);
 
+	*ConnectionCookie = Client;
+
     return STATUS_SUCCESS;
 }
 
@@ -78,6 +80,8 @@ MessageHandler(
 	UNICODE_STRING lowerCaseUnicodeString = { 0 };
 	UNICODE_STRING upperCaseUnicodeString = { 0 };
 	PCOMMAND_MESSAGE commandMessage = InputBuffer;
+	PNDFCOMM_CLIENT client = (PNDFCOMM_CLIENT)ConnectionCookie;
+	NDFCOMM_DECLARE_RELATIVE_TIMEOUT(timeout, 100);
 
 	DbgPrint(
 		"[MessageHandler]\n"
@@ -98,10 +102,14 @@ MessageHandler(
 	RtlCopyMemory(lowerCase, commandMessage->Data, 26);
 	RtlCopyMemory(upperCase, Add2Ptr(commandMessage->Data, 26), 26);
 
+	NdfCommSendMessage(client, lowerCase, sizeof(lowerCase), &timeout);
+
 	RtlInitUnicodeString(&lowerCaseUnicodeString, lowerCase);
 	RtlUpcaseUnicodeString(&upperCaseUnicodeString, &lowerCaseUnicodeString, TRUE);
 
 	RtlFreeUnicodeString(&upperCaseUnicodeString);
+
+
 
     return STATUS_SUCCESS;
 }

@@ -2,7 +2,7 @@
 
 #include "NdfCommConcurentList.h"
 
-#include <ntddk.h>
+#include <ntifs.h>
 
 typedef struct _NDFCOMM_PENDED_IRP_QUEUE
 {

@@ -169,7 +169,7 @@ NdfCommunicationSendMessage(
 
     if (!DeviceIoControl(
         Connection,
-        NDFCOMM_SENDMESSAGE,
+        NDFCOMM_SEND_MESSAGE,
         InputBuffer,
         InputBufferSize,
         OutputBuffer,
@@ -199,7 +199,7 @@ NdfCommunicationGetMessage(
 
 	if (!DeviceIoControl(
 		Connection,
-		NDFCOMM_GETMESSAGE,
+		NDFCOMM_GET_MESSAGE,
 		NULL,
 		0,
 		MessageBuffer,

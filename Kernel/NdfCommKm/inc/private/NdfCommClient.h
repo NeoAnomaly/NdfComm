@@ -3,7 +3,7 @@
 #include "NdfCommConcurentList.h"
 #include "NdfCommPendedIrpQueue.h"
 
-#include <ntddk.h>
+#include <ntifs.h>
 
 enum _NDFCOMM_CLIENT_STATE_BITS
 {

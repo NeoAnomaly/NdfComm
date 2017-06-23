@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ntddk.h>
+#include <ntifs.h>
 
 typedef struct _NDFCOMM_CONCURENT_LIST
 {

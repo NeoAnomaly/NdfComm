@@ -5,8 +5,6 @@
 #include "NdfCommDebug.h"
 #include "NdfCommUtils.h"
 
-#include <ntifs.h>
-
 enum _NDFCOMMP_WAIT_OBJECTS
 {
 	DisconnectEvent,
@@ -227,32 +225,39 @@ NdfCommpProcessControlRequest(
 
 	if (!IrpSp->FileObject->FsContext)
 	{
+		NdfCommDebugBreak();
+
 		return STATUS_INVALID_DEVICE_STATE;
 	}
-	
-	if (METHOD_FROM_CTL_CODE(controlCode) != METHOD_NEITHER)
-	{
-		return STATUS_INVALID_PARAMETER;
-	}
-
-	///
-	/// Т.к. мы используем NEITHER IO и юзермодные буферы напрямую,
-	/// необходимо быть уверенным в контексте исполнения
-	///
-	ASSERT(IoGetRequestorProcessId(Irp) == IoGetCurrentProcess());
 
 	switch (controlCode)
 	{
 
 
-	case NDFCOMM_GETMESSAGE:
+	case NDFCOMM_GET_MESSAGE:
+
+		if (METHOD_FROM_CTL_CODE(controlCode) != METHOD_BUFFERED)
+		{
+			return STATUS_INVALID_PARAMETER;
+		}
 
 		status = NdfCommpEnqueueGetMessageIrp(IrpSp->FileObject, Irp);
 		break;
 
 
 
-	case NDFCOMM_SENDMESSAGE:
+	case NDFCOMM_SEND_MESSAGE:
+
+		if (METHOD_FROM_CTL_CODE(controlCode) != METHOD_NEITHER)
+		{
+			return STATUS_INVALID_PARAMETER;
+		}
+
+		///
+		/// Т.к. мы используем NEITHER IO и юзермодные буферы напрямую,
+		/// необходимо быть уверенным в контексте исполнения
+		///
+		ASSERT(IoGetRequestorProcessId(Irp) == HandleToUlong(PsGetCurrentProcessId()));
 
 		status = NdfCommpDeliverMessageToKm(
 			IrpSp->FileObject,
@@ -268,7 +273,7 @@ NdfCommpProcessControlRequest(
 
 
 
-	case NDFCOMM_REPLYMESSAGE:
+	case NDFCOMM_REPLY_MESSAGE:
 
 		status = STATUS_NOT_IMPLEMENTED;
 		break;
@@ -276,6 +281,8 @@ NdfCommpProcessControlRequest(
 
 
 	default:
+
+		NdfCommDebugBreak();
 		status = STATUS_INVALID_PARAMETER;
 		break;
 	}
@@ -347,52 +354,8 @@ NdfCommpEnqueueGetMessageIrp(
     PAGED_CODE();
 
     PNDFCOMM_CLIENT client = FileObject->FsContext;
-	PIO_STACK_LOCATION irpSp = IoGetCurrentIrpStackLocation(Irp);
 
     ASSERT(client);
-
-	///
-	/// Подготавливаем выходной буфер пакета в который будет записано
-	/// посылаемое сообщение. Сейчас это просто эмуляция BUFFERED I/O
-	///
-	try {
-
-			if () 
-			{
-				ProbeForWrite(
-					Irp->UserBuffer, 
-					irpSp->Parameters.DeviceIoControl.OutputBufferLength,
-					sizeof(UCHAR)
-				);
-			}
-			else {
-				OutputBufferLength = 0;
-			}
-		}
-
-		if (method != METHOD_NEITHER) {
-			if (ARGUMENT_PRESENT(InputBuffer)) {
-				ProbeForRead(InputBuffer,
-					InputBufferLength,
-					sizeof(UCHAR));
-			}
-			else {
-				InputBufferLength = 0;
-			}
-		}
-
-	} except(EXCEPTION_EXECUTE_HANDLER) {
-
-		//
-		// An exception was incurred while attempting to probe or write
-		// one of the caller's parameters.  Simply return an appropriate
-		// error status code.
-		//
-
-		return GetExceptionCode();
-
-	}
-}
 
     return IoCsqInsertIrpEx(&client->PendedIrpQueue.Csq, Irp, NULL, NULL);
 }
@@ -406,39 +369,11 @@ NdfCommpGetUserBuffer(
 {
 	PAGED_CODE();
 
-	PMDL mdl = NULL;
-	PEPROCESS process = NULL;
+	UNREFERENCED_PARAMETER(RequiredBufferLength);
 
-	if (Irp->MdlAddress || !Buffer)
-	{
-		return STATUS_INVALID_PARAMETER;
-	}
+	*Buffer = Irp->AssociatedIrp.SystemBuffer;
 
-	mdl = IoAllocateMdl(
-		Irp->UserBuffer,
-		RequiredBufferLength,
-		FALSE,
-		FALSE,
-		Irp
-	);
-
-	if (!mdl)
-	{
-		return STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	process = IoGetRequestorProcess(Irp);
-
-	MmProbeAndLockProcessPages(mdl, process, Irp->RequestorMode, IoWriteAccess);
-
-	*Buffer = MmGetSystemAddressForMdlSafe(mdl, NormalPagePriority);
-
-	if (*Buffer == NULL)
-	{
-		return STATUS_INSUFFICIENT_RESOURCES;
-	}
-
-	return STATUS_SUCCESS;
+	return (*Buffer) ? STATUS_SUCCESS : STATUS_UNSUCCESSFUL;
 }
 
 _Check_return_
@@ -507,7 +442,7 @@ NdfCommSendMessage(
 				NdfCommDebugTrace(
 					TRACE_LEVEL_INFORMATION,
 					0,
-					"Waiting for listeners failed(timeout)"
+					"Waiting for listeners complete(timeout)"
 				);
 
 				break;
@@ -518,7 +453,7 @@ NdfCommSendMessage(
 				NdfCommDebugTrace(
 					TRACE_LEVEL_INFORMATION,
 					0,
-					"Waiting for listeners failed(client disconnected)"
+					"Waiting for listeners complete(client disconnected)"
 				);
 
 				status = STATUS_PORT_DISCONNECTED;
@@ -555,29 +490,6 @@ NdfCommSendMessage(
 						irp,
 						status
 					);
-
-					if (status == STATUS_INSUFFICIENT_RESOURCES)
-					{
-						NdfCommDebugTrace(
-							TRACE_LEVEL_INFORMATION,
-							0,
-							"Can't map user buffer due to insufficient resources, return IRP(%p) back to the queue",
-							irp
-						);
-
-						status = IoCsqInsertIrpEx(&pendedIrpQueue->Csq, irp, NULL, NULL);
-
-						if (NT_SUCCESS(status))
-						{
-							status = STATUS_INSUFFICIENT_RESOURCES;
-						}
-						else
-						{
-							NdfCommCompleteIrp(irp, status, 0);
-						}
-
-						break;
-					}
 				}
 
 				///

@@ -3,7 +3,7 @@
 #include "NdfCommConcurentList.h"
 #include "NdfCommKm.h"
 
-#include <ntddk.h>
+#include <ntifs.h>
 
 struct _NDFCOMM_GLOBALS
 {
